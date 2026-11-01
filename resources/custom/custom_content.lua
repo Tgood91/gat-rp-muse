@@ -153,13 +153,13 @@ addVendor("glizzysDepot", {
     place = "glizzysGas", sells = { "fuel", "glizzyDog", "water" },
 })
 addVendor("tummyExpress", {
-    label = "Tanazolam-tummy Express", type = "food",
+    label = "Tanaz-tummy Express", type = "food",
     place = "tummy2", sells = { "beans", "energyDrink" },
 })
 -- sells = { "ammo" } is a CATEGORY entry: every ammo type,
 -- base or custom — this vendor carries ALL ammo.
-addVendor("tanaz0lamAmmo", {
-    label = "Tanaz0lam Ammo", type = "all ammo",
+addVendor("tanazAmmo", {
+    label = "Tanaz Ammo", type = "all ammo",
     place = "gunStore", sells = { "ammo" },
 })
 
@@ -170,14 +170,14 @@ addVehicle("zipzapGT", {
     special = "The ZipZap's big sibling: silent and faster",
 })
 addVehicle("tummyTruck", {
-    label = "Tanazolam Tummy Truck", class = "food truck",
+    label = "Tanaz Tummy Truck", class = "food truck",
     price = 1600, topSpeed = 95, tank = 90, health = 120,
     special = "Food runs pay +25 gold",
 })
 
 -- Custom armour
 addArmour("kevlarVest", {
-    label = "Kevlar Vest", price = 350,
+    label = "Ballistic Vest", price = 350,
     protection = 50, durability = 100, weight = 6,
 })
 addArmour("ceramicCarrier", {
