@@ -14,7 +14,7 @@ resources/
   repairs/     the mechanic shop + car health (Lesson 6)
   maps/        locations, coordinates, travel (Lesson 7)
   needs/       health, hunger + thirst (Lesson 8)
-  custom/      custom content registries (Lesson 13)
+  custom/      custom content registries + wiring (Lessons 13–14)
 ```
 
 Coming later: maps. Rule of the repo: a folder is only created when its
@@ -49,6 +49,8 @@ lesson has real code — no empty lessons.
   - `shifts.lua` — jobs become a table too (pay, key requirement, specialized car, bonus), and `workShift()` reads `currentCarKey`: the Lesson 11 bonuses go live as pairings (Taxi Cab +20 on taxi only, Delivery Van +30 on delivery only), with `job.bonus or 0` defaulting unpaired jobs to no bonus.
 - **Lesson 13 — Custom content** (`resources/custom/`)
   - `custom_content.lua` — one registry table per category (vendors, vehicles, armour, ammo, firearms) and one gatekeeper add function per category: label + required field + unused key, or the entry is refused. Firearms are cross-checked against real ammo types (base or custom) before they can register; labeled registries are counted with a `pairs` loop.
+- **Lesson 14 — Wired custom content** (`resources/custom/`)
+  - `wired_systems.lua` — the older systems read the registries: a category map (`Registries`) lets one `buyFromVendor()` sell armour, firearms, and ammo; `VendorStock` tracks what each vendor actually has (separate from what it *can* sell); `stockCustomAmmo()` restocks vendor shelves; and Lesson 11's importer reads `CustomVehicles` via `importCustomVehicle()`. Adds Bushido Supply, a gear vendor at the gun store.
 
 ## Notes
 
