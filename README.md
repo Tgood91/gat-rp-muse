@@ -40,6 +40,8 @@ lesson has real code — no empty lessons.
   - `needs.lua` — player vitals: health, hunger, thirst. `eat()`/`drink()` spend pack items to refill a stat (capped at 100), `play(hours)` drains hunger −10/hr and thirst −15/hr (floored at 0), and an empty stat taxes health −5. Uses Lesson 1's health 85 and food counts.
 - **Lesson 9 — Tables + vendor chains** (`resources/maps/`)
   - `chains.lua` — the map becomes one `locations` table (16 places), and lookup replaces the elseif chain (`nil` = no such place). Adds Tanner's two chains: **Glizzys-2-Go** ×8 (dogs + water, no pumps) and **Tanazolam-tummy** ×4 (beans + energy drinks), each with a vendor tag, a menu, and a shared chain stock pool. Distances rounded to 1 decimal.
+- **Lesson 10 — The inventory, tabled** (`resources/inventory/`)
+  - `inventory_tables.lua` — Lesson 1 rebuilt on tables (original untouched): 48 loose variables become 3 tables (`player`, `items`, nested `prices{item={buy,sell}}`). One generic `buy()`/`sell()` handles every item via lookup; nil covers both unknown items and unsellable ones (ammo, car key); a `pairs` loop prints the whole inventory.
 
 ## Notes
 
