@@ -44,6 +44,8 @@ lesson has real code — no empty lessons.
   - `inventory_tables.lua` — Lesson 1 rebuilt on tables (original untouched): 48 loose variables become 3 tables (`player`, `items`, nested `prices{item={buy,sell}}`). One generic `buy()`/`sell()` handles every item via lookup; nil covers both unknown items and unsellable ones (ammo, car key); a `pairs` loop prints the whole inventory.
 - **Lesson 11 — Importing specialized cars** (`resources/cars/`)
   - `imports.lua` — an import catalog table (Taxi Cab, Delivery Van, Armored SUV, ZipZap) where each car is data: price, top speed, tank, health, a special trait, and a job bonus. `importCar()` charges price + 15% import fee (integer division `//` keeps gold whole), the garage is a numbered LIST table searched with a numeric `for` loop, and `setCar()` swaps your current car.
+- **Lesson 12 — Wired jobs** (`resources/jobs/`)
+  - `shifts.lua` — jobs become a table too (pay, key requirement, specialized car, bonus), and `workShift()` reads `currentCarKey`: the Lesson 11 bonuses go live as pairings (Taxi Cab +20 on taxi only, Delivery Van +30 on delivery only), with `job.bonus or 0` defaulting unpaired jobs to no bonus.
 
 ## Notes
 
