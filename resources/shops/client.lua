@@ -82,6 +82,21 @@ RegisterCommand('buyammo', function(source, args, raw)
     end
 end, false)
 
+-- /buyarmor lowArmor   (amount optional, default 1)
+-- Bushido Supply's counter (Lesson 19). Same deal as
+-- /buyammo: the client sends the raw ask — tier key and
+-- amount — and the server checks the tier, the shelf,
+-- your gold, and whether you're standing at Bushido.
+RegisterCommand('buyarmor', function(source, args, raw)
+    local armourKey = args[1]
+    local amount = tonumber(args[2]) or 1
+    if armourKey == nil then
+        say("Usage: /buyarmor <lowArmor|mediumArmor|maxArmor> [amount]")
+    else
+        TriggerServerEvent('shops:buyArmour', armourKey, amount)
+    end
+end, false)
+
 -- /wallet — ask the server what you've got.
 RegisterCommand('wallet', function(source, args, raw)
     TriggerServerEvent('shops:getWallet')
@@ -108,7 +123,12 @@ end)
 --   Drive to the Tanaz Ammo blip (Ammu-Nation icon):
 --   /whereami                -> "You are at Tanaz Ammo."
 --   /buyammo pistolAmmo 20   -> bought, gold 5980
---   /wallet                  -> your gold + ammo counts
+--   Drive to the Bushido Supply blip (Little Seoul):
+--   /buyarmor lowArmor       -> Low Armour Vest, gold -200
+--   /buyarmor maxArmor       -> the 100-protection vest
+--   /buyarmor lowArmor       -> ...from Tanaz's doorstep
+--      it refuses: wrong shop, you have to BE at Bushido
+--   /wallet                  -> gold + ammo + armour
 --   /coords                  -> your exact position:
 --   stand in a doorway, run it, move the shop there
 --   in config.lua, restart the resource, stand on
