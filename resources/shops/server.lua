@@ -35,23 +35,35 @@
 -- in the name cleanup. Same recipe as buyAmmo; the
 -- range check is now shared by both counters.
 --
+-- LESSON 22 NOTE: every gold read/move below goes
+-- through the framework bridge (Fw, framework.lua) —
+-- standalone it lands in these wallets; with ESX or
+-- QBCore selected in config.lua, the framework's cash
+-- is the truth and our gold field sits unused.
+--
 -- LESSON 20 ADDITION: a real MENU (NUI). The server
 -- builds each shop's menu (items, prices, live stock,
 -- the asker's gold) and the client's web page just draws
 -- it. Menu buys arrive as 'shops:buyItem' and land in
 -- the SAME buyAmmo/buyArmour checks — new front door,
 -- same counters. See menuFor below.
+--
+-- LESSON 21 ADDITION: FOOD COUNTERS. Glizzys Depot and
+-- Tanaz-tummy Express finally sell: a FoodCatalog (the
+-- Lesson 1 prices, with Lesson 8's hunger/thirst values
+-- riding along as data) plus buyFood — the same recipe
+-- a third time. Their menus open for real now.
 -- ============================================================
 
 -- ---------- The shops (Lesson 14) ----------
 CustomVendors = {
     glizzysDepot = {
         label = "Glizzys Depot", place = "g2g1",
-        sells = { "fuel", "glizzyDog", "water" },
+        sells = { "food" },  -- Lesson 21: category form, like ammo/armour (fuel has no counter yet — a later lesson)
     },
     tummyExpress = {
         label = "Tanaz-tummy Express", place = "tummy2",
-        sells = { "beans", "energyDrink" },
+        sells = { "food" },  -- Lesson 21: category form, like ammo/armour
     },
     bushidoSupply = {
         label = "Bushido Supply", place = "gunStore",
@@ -82,6 +94,22 @@ ArmourCatalog = {
     maxArmor = { label = "Max Armour Vest", price = 800, protection = 100 },
 }
 ARMOUR_ORDER = { "lowArmor", "mediumArmor", "maxArmor" }
+
+-- The food catalog (Lesson 21). Prices are Lesson 1's;
+-- hunger/thirst are Lesson 8's eat/drink values, kept
+-- as DATA for now — a needs system can spend them later.
+-- Each food shop stocks only its own slice (see
+-- VendorCapacity): Glizzys = dogs + water, Tummy
+-- Express = beans + energy drinks, as in Lesson 9.
+-- Keys match this resource's stock tables (water, beans
+-- — the short names the shelves already use).
+FoodCatalog = {
+    glizzyDog = { label = "Glizzy Dog", price = 50, hunger = 40 },
+    water = { label = "Water Bottle", price = 10, thirst = 50 },
+    beans = { label = "Canned Beans", price = 15, hunger = 25 },
+    energyDrink = { label = "Energy Drink", price = 20, thirst = 30 },
+}
+FOOD_ORDER = { "glizzyDog", "water", "beans", "energyDrink" }
 
 VendorOrder = { "glizzysDepot", "tummyExpress", "bushidoSupply", "tanazAmmo" }
 
@@ -174,10 +202,15 @@ end
 function getWallet(playerId)
     local key = playerKey(playerId)
     if PlayerWallets[key] == nil then
-        PlayerWallets[key] = { gold = 6000, owned = {}, ownedArmour = {} }
+        PlayerWallets[key] = {
+            gold = 6000, owned = {}, ownedArmour = {}, ownedFood = {},
+        }
     end
     if PlayerWallets[key].ownedArmour == nil then
         PlayerWallets[key].ownedArmour = {}  -- pre-Lesson-19 save
+    end
+    if PlayerWallets[key].ownedFood == nil then
+        PlayerWallets[key].ownedFood = {}  -- pre-Lesson-21 save
     end
     return PlayerWallets[key]
 end
@@ -204,9 +237,52 @@ end
 local RESOURCE_NAME = GetCurrentResourceName()
 local DATA_FILE = "data.json"
 
+-- ============================================================
+-- STANDALONE MONEY (Lesson 22) — the bridge's home room.
+-- framework.lua's Fw calls these when Config.Framework
+-- is "standalone". Under esx/qbcore they're never
+-- called: the framework's cash is the money.
+-- ============================================================
+StandaloneMoney = {
+    Get = function(playerId)
+        return getWallet(playerId).gold
+    end,
+    Remove = function(playerId, amount)
+        local wallet = getWallet(playerId)
+        if wallet.gold < amount then
+            return false
+        end
+        wallet.gold = wallet.gold - amount
+        return true
+    end,
+    Add = function(playerId, amount)
+        local wallet = getWallet(playerId)
+        wallet.gold = wallet.gold + amount
+        return true
+    end,
+}
+
+-- The one gold question every counter asks.
+function playerGold(playerId)
+    return Fw.GetMoney(playerId)
+end
+
 function saveData()
+    local walletsToSave = PlayerWallets
+    if Fw.Mode ~= "standalone" then
+        -- The framework owns the money: save ITEMS only,
+        -- so a restart can never resurrect stale gold.
+        walletsToSave = {}
+        for key, wallet in pairs(PlayerWallets) do
+            walletsToSave[key] = {
+                owned = wallet.owned,
+                ownedArmour = wallet.ownedArmour,
+                ownedFood = wallet.ownedFood,
+            }
+        end
+    end
     local payload = json.encode({
-        wallets = PlayerWallets,
+        wallets = walletsToSave,
         stock = VendorStock,
     })
     SaveResourceFile(RESOURCE_NAME, DATA_FILE, payload, -1)
@@ -226,12 +302,19 @@ function loadData()
     if data.wallets ~= nil then
         PlayerWallets = data.wallets
         for key, wallet in pairs(PlayerWallets) do
-            wallet.gold = math.floor(wallet.gold or 6000)
+            if Fw.Mode == "standalone" then
+                wallet.gold = math.floor(wallet.gold or 6000)
+            else
+                wallet.gold = nil  -- framework mode: never restore our gold
+            end
             for ammoKey, count in pairs(wallet.owned or {}) do
                 wallet.owned[ammoKey] = math.floor(count)
             end
             for armourKey, count in pairs(wallet.ownedArmour or {}) do
                 wallet.ownedArmour[armourKey] = math.floor(count)
+            end
+            for foodKey, count in pairs(wallet.ownedFood or {}) do
+                wallet.ownedFood[foodKey] = math.floor(count)
             end
         end
     end
@@ -318,17 +401,17 @@ function buyAmmo(playerId, vendorKey, ammoKey, amount, playerCoords)
     if inStock < amount then
         return false, vendor.label .. " has " .. inStock ..
                " x " .. item.label .. " - not enough."
-    elseif wallet.gold < cost then
+    elseif playerGold(playerId) < cost then
         return false, "Not enough gold: " .. amount .. " x " ..
                item.label .. " costs " .. cost .. "."
     else
-        wallet.gold = wallet.gold - cost
+        Fw.RemoveMoney(playerId, cost)
         shelf[ammoKey] = inStock - amount
         wallet.owned[ammoKey] = (wallet.owned[ammoKey] or 0) + amount
         saveData()  -- money moved: save NOW, not later
         return true, "Bought " .. amount .. " x " .. item.label ..
                " for " .. cost .. " gold at " .. vendor.label ..
-               ". Gold: " .. wallet.gold
+               ". Gold: " .. playerGold(playerId)
     end
 end
 
@@ -385,11 +468,11 @@ function buyArmour(playerId, vendorKey, armourKey, amount, playerCoords)
     if inStock < amount then
         return false, vendor.label .. " has " .. inStock ..
                " x " .. item.label .. " - not enough."
-    elseif wallet.gold < cost then
+    elseif playerGold(playerId) < cost then
         return false, "Not enough gold: " .. amount .. " x " ..
                item.label .. " costs " .. cost .. "."
     else
-        wallet.gold = wallet.gold - cost
+        Fw.RemoveMoney(playerId, cost)
         shelf[armourKey] = inStock - amount
         wallet.ownedArmour[armourKey] =
             (wallet.ownedArmour[armourKey] or 0) + amount
@@ -397,7 +480,61 @@ function buyArmour(playerId, vendorKey, armourKey, amount, playerCoords)
         return true, "Bought " .. amount .. " x " .. item.label ..
                " (" .. item.protection .. " protection) for " ..
                cost .. " gold at " .. vendor.label ..
-               ". Gold: " .. wallet.gold
+               ". Gold: " .. playerGold(playerId)
+    end
+end
+
+-- ============================================================
+-- BUY FOOD (Lesson 21) — Glizzys + Tummy Express.
+-- The same recipe a third time: catalog lookup, the
+-- vendor must sell the "food" category, range, shelf,
+-- gold — then move and save. Purchases land in
+-- ownedFood. Eating them (Lesson 8's needs) is a later
+-- lesson; today the counters SELL.
+-- ============================================================
+function buyFood(playerId, vendorKey, foodKey, amount, playerCoords)
+    local wallet = getWallet(playerId)
+    local vendor = CustomVendors[vendorKey]
+    local item = FoodCatalog[foodKey]
+    amount = math.floor(tonumber(amount) or 0)
+
+    if vendor == nil then
+        return false, "No such vendor: " .. tostring(vendorKey)
+    elseif item == nil then
+        return false, "No such food: " .. tostring(foodKey)
+    elseif not vendorSellsCategory(vendor, "food") then
+        return false, vendor.label .. " doesn't sell food."
+    elseif amount < 1 then
+        return false, "Amount must be 1 or more."
+    end
+
+    local inRange, rangeMsg = rangeCheck(vendorKey, vendor, playerCoords)
+    if not inRange then
+        return false, rangeMsg
+    end
+
+    local shelf = VendorStock[vendorKey]
+    local inStock = 0
+    if shelf ~= nil and shelf[foodKey] ~= nil then
+        inStock = shelf[foodKey]
+    end
+    local cost = item.price * amount
+
+    if inStock < amount then
+        return false, vendor.label .. " has " .. inStock ..
+               " x " .. item.label .. " - not enough."
+    elseif playerGold(playerId) < cost then
+        return false, "Not enough gold: " .. amount .. " x " ..
+               item.label .. " costs " .. cost .. "."
+    else
+        Fw.RemoveMoney(playerId, cost)
+        shelf[foodKey] = inStock - amount
+        wallet.ownedFood[foodKey] =
+            (wallet.ownedFood[foodKey] or 0) + amount
+        saveData()  -- money moved: save NOW, not later
+        return true, "Bought " .. amount .. " x " .. item.label ..
+               " for " .. cost .. " gold at " .. vendor.label ..
+               ". Gold: " .. playerGold(playerId)
     end
 end
 
@@ -418,9 +555,17 @@ function walletSummary(playerId)
             (wallet.ownedArmour[key] or 0) .. " " ..
             ArmourCatalog[key].label
     end
-    return "Gold: " .. wallet.gold .. " | Ammo: " ..
+    local foodParts = {}
+    for i = 1, #FOOD_ORDER do
+        local key = FOOD_ORDER[i]
+        foodParts[#foodParts + 1] =
+            (wallet.ownedFood[key] or 0) .. " " ..
+            FoodCatalog[key].label
+    end
+    return "Gold: " .. playerGold(playerId) .. " | Ammo: " ..
            table.concat(parts, ", ") .. " | Armour: " ..
-           table.concat(armourParts, ", ")
+           table.concat(armourParts, ", ") .. " | Food: " ..
+           table.concat(foodParts, ", ")
 end
 
 -- ============================================================
@@ -459,10 +604,9 @@ end)
 -- THE MENU (Lesson 20) — the server builds it, the page
 -- just draws it. A menu is a snapshot: this vendor's
 -- buyable items, their prices, the LIVE shelf counts,
--- and the asking player's gold. A vendor whose wares
--- have no counter yet (the food shops) returns nil —
--- the client tells the player instead of opening an
--- empty window.
+-- and the asking player's gold. A vendor with nothing
+-- buyable returns nil — the client tells the player
+-- instead of opening an empty window.
 -- ============================================================
 function menuFor(playerId, vendorKey)
     local vendor = CustomVendors[vendorKey]
@@ -498,12 +642,37 @@ function menuFor(playerId, vendorKey)
         end
     end
 
+    if vendorSellsCategory(vendor, "food") then
+        -- A food menu lists only what THIS shop stocks:
+        -- its VendorCapacity entry is the carrying list
+        -- (Lesson 9's rule — one chain, one menu).
+        local cap = VendorCapacity[vendorKey] or {}
+        for i = 1, #FOOD_ORDER do
+            local key = FOOD_ORDER[i]
+            local item = FoodCatalog[key]
+            if cap[key] ~= nil then
+                local detail
+                if item.hunger ~= nil then
+                    detail = "+" .. item.hunger .. " hunger"
+                else
+                    detail = "+" .. item.thirst .. " thirst"
+                end
+                items[#items + 1] = {
+                    kind = "food", key = key, label = item.label,
+                    detail = detail,
+                    price = item.price,
+                    stock = shelf[key] or 0,
+                }
+            end
+        end
+    end
+
     if #items == 0 then
         return nil
     end
     return {
         vendorKey = vendorKey, vendor = vendor.label,
-        gold = wallet.gold, items = items,
+        gold = playerGold(playerId), items = items,
     }
 end
 
@@ -540,6 +709,8 @@ AddEventHandler('shops:buyItem', function(vendorKey, kind, key, amount)
         ok, message = buyAmmo(playerId, vendorKey, key, amount, coords)
     elseif kind == "armour" then
         ok, message = buyArmour(playerId, vendorKey, key, amount, coords)
+    elseif kind == "food" then
+        ok, message = buyFood(playerId, vendorKey, key, amount, coords)
     else
         ok, message = false, "Unknown item kind: " .. tostring(kind)
     end

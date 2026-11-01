@@ -20,6 +20,17 @@ Config = {}
 -- How close (in metres) counts as "at the shop".
 Config.BuyRange = 5.0
 
+-- Lesson 22: whose money runs the tills.
+--   "standalone"  this resource's own wallets (default —
+--                 no framework needed, everything as
+--                 Lessons 16-21 built it)
+--   "esx"         ESX cash (es_extended must be started
+--                 BEFORE shops in server.cfg)
+--   "qbcore"      QBCore cash (qb-core started first)
+-- Under esx/qbcore the framework owns the money: our
+-- gold is neither saved nor restored — items only.
+Config.Framework = "standalone"
+
 Config.Vendors = {
     tanazAmmo = {
         label = "Tanaz Ammo",
