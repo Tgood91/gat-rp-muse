@@ -57,3 +57,36 @@ Config.Vendors = {
         blipColour = 2,    -- green
     },
 }
+
+-- Lesson 28: JOBS — where honest work happens. The spots
+-- and the pay (Lesson 3's numbers, unchanged) are public —
+-- the signs stand on the street — so they live here with
+-- the vendors. Who is mid-shift and how long a shift runs
+-- stay server-only (server.lua): anyone can read the sign
+-- on the door; the foreman's clipboard is another matter.
+Config.Jobs = {
+    mechanic = {
+        label = "Mechanic",
+        place = "LS Customs",
+        coords = vector3(-337.2, -136.4, 39.0),  -- LS Customs, Burton
+        blip = 446,        -- wrench icon
+        blipColour = 17,   -- orange
+        pay = 80,
+    },
+    taxi = {
+        label = "Taxi Driver",
+        place = "Downtown Cab Co.",
+        coords = vector3(894.8, -179.2, 74.7),   -- Downtown Cab Co., east LS
+        blip = 198,        -- taxi icon
+        blipColour = 5,    -- yellow
+        pay = 40,
+    },
+    delivery = {
+        label = "Delivery Driver",
+        place = "Post OP Depot",
+        coords = vector3(-424.2, -2789.6, 6.0),  -- Post OP depot, port side
+        blip = 478,        -- parcel icon
+        blipColour = 2,    -- green
+        pay = 100,
+    },
+}

@@ -37,6 +37,20 @@ for vendorKey, spot in pairs(Config.Vendors) do
     EndTextCommandSetBlipName(blip)
 end
 
+-- Lesson 28: job spots get blips too — same recipe,
+-- second table. A blip is just a signpost; the server
+-- still decides whether you're really at work.
+for jobKey, job in pairs(Config.Jobs) do
+    local blip = AddBlipForCoord(job.coords.x, job.coords.y, job.coords.z)
+    SetBlipSprite(blip, job.blip)
+    SetBlipScale(blip, 0.8)
+    SetBlipColour(blip, job.blipColour)
+    SetBlipAsShortRange(blip, true)
+    BeginTextCommandSetBlipName('STRING')
+    AddTextComponentSubstringPlayerName(job.place)
+    EndTextCommandSetBlipName(blip)
+end
+
 -- /whereami — the nearest shop, and whether you're in
 -- range of it. Same distance math the server uses; here
 -- it's just information, there it's the law.
@@ -329,6 +343,26 @@ CreateThread(function()
 end)
 
 -- ============================================================
+-- LESSON 28: JOBS — the client asks to work; the server
+-- keeps the clock. /work mechanic at the LS Customs
+-- blip starts a shift; /collect pays once it has run.
+-- The client holds no timer and no pay it can spend —
+-- the pay in Config.Jobs is sign-on-the-door data, and
+-- the server re-reads its own copy when money moves.
+-- ============================================================
+RegisterCommand('work', function(source, args, raw)
+    if args[1] == nil then
+        say("Usage: /work <mechanic|taxi|delivery>")
+    else
+        TriggerServerEvent('shops:work', args[1])
+    end
+end, false)
+
+RegisterCommand('collect', function(source, args, raw)
+    TriggerServerEvent('shops:collect')
+end, false)
+
+-- ============================================================
 -- TRY IT in game (server running, resource ensured):
 --   THE MENU (Lesson 20): stand at any shop blip and
 --   press E (or type /shop) — a window opens with the
@@ -340,6 +374,9 @@ end)
 --   FUEL (Lesson 27): drive INTO Glizzys Depot in a
 --   car and /buyfuel 30 (or use the menu's Fuel row) —
 --   the sale approves, then the tank actually fills.
+--   JOBS (Lesson 28): /work mechanic at the LS Customs
+--   blip, wait out the shift, /collect there — +80
+--   gold. Try /collect early: the server knows.
 --   NEEDS (Lesson 26): /needs shows hunger + thirst;
 --   they drain every city hour and a HUD line appears.
 --   /eat glizzyDog / /drink water spend your pack —
