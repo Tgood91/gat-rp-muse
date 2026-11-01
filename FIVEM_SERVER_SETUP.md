@@ -106,6 +106,7 @@ start.`; later boots print `[shops] save loaded: ...`. Deleting
 | Restock rule | `server.lua` → `RESTOCK_PERCENT` / `RESTOCK_EVERY` | 80%, every 4 city hours. |
 | Stock sizes | `server.lua` → `VendorCapacity` | Per vendor, per item shelf capacity. |
 | City demand | `server.lua` → `Demand` | Units sold per city hour per item. |
+| Whose money runs the tills | `config.lua` → `Config.Framework` | `"standalone"` (default: our own wallets), `"esx"`, or `"qbcore"`. For esx/qbcore, ensure the framework resource **before** `shops` in server.cfg — it owns the cash, and our saves then store items only. Money only: items stay in our wallets in every mode. |
 | Starting gold | `server.lua` → `getWallet` | 6000. |
 
 After editing a file: `restart shops` in the server console.
