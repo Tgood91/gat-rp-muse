@@ -7,3 +7,6 @@ Thumbs.db
 # Local scratch
 *.log
 tmp/
+
+# FiveM runtime state (written by the shops resource on the server)
+resources/shops/data.json

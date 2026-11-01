@@ -22,6 +22,12 @@
 -- on the server. A client is never asked "where are
 -- you?": a modded client would just answer "at the
 -- shop" from across the map.
+--
+-- LESSON 18 ADDITION: it survives a restart. Wallets and
+-- stock are saved to a file (data.json) and loaded back
+-- at boot — and wallets are keyed by the player's license
+-- identifier, because `source` is a seat number that
+-- changes every session. Details at PERSISTENCE below.
 -- ============================================================
 
 -- ---------- The shops (Lesson 14) ----------
@@ -131,18 +137,90 @@ function cityBuys()
 end
 
 -- ============================================================
--- WALLETS — one per player, keyed by their server id
--- (the "source" of their events). Created on first use:
--- a brand-new player starts with 6000 gold, no ammo.
+-- WALLETS — one per player. LESSON 18 CHANGE: keyed by
+-- the player's LICENSE identifier, not their source.
+-- source is a seat number: it changes every time they
+-- connect, so a wallet keyed by source would belong to
+-- whoever sits down next. An identifier follows the
+-- player — and a saved wallet can only be found again
+-- after a restart if its key survives the restart too.
+-- Created on first use: 6000 gold, no ammo.
 -- Later this is where a framework (ESX/QBCore) plugs in.
 -- ============================================================
 PlayerWallets = {}
 
+function playerKey(playerId)
+    return GetPlayerIdentifierByType(playerId, 'license')
+        or ("session:" .. playerId)  -- fallback: never crash
+end
+
 function getWallet(playerId)
-    if PlayerWallets[playerId] == nil then
-        PlayerWallets[playerId] = { gold = 6000, owned = {} }
+    local key = playerKey(playerId)
+    if PlayerWallets[key] == nil then
+        PlayerWallets[key] = { gold = 6000, owned = {} }
     end
-    return PlayerWallets[playerId]
+    return PlayerWallets[key]
+end
+
+-- ============================================================
+-- PERSISTENCE (Lesson 18) — memory dies on restart; a
+-- file doesn't. All state (wallets + stock) is packed
+-- into ONE table, turned into JSON text, and written to
+-- data.json inside this resource's own folder with
+-- SaveResourceFile. At boot, LoadResourceFile reads it
+-- back and json.decode unpacks it.
+--
+-- Save WHEN:
+--   * the moment money moves (a successful buy),
+--   * when a player leaves (playerDropped),
+--   * when the resource stops (onResourceStop).
+-- A hard crash can still lose the last few minutes —
+-- that's the honest limit of file saves, and why busy
+-- servers grow into databases later.
+--
+-- JSON trap: numbers come back as DECIMALS (5980.0), so
+-- every count is floored back to a whole number on load.
+-- ============================================================
+local RESOURCE_NAME = GetCurrentResourceName()
+local DATA_FILE = "data.json"
+
+function saveData()
+    local payload = json.encode({
+        wallets = PlayerWallets,
+        stock = VendorStock,
+    })
+    SaveResourceFile(RESOURCE_NAME, DATA_FILE, payload, -1)
+end
+
+function loadData()
+    local raw = LoadResourceFile(RESOURCE_NAME, DATA_FILE)
+    if raw == nil then
+        print("[shops] no save file yet - fresh start.")
+        return
+    end
+    local data = json.decode(raw)
+    if data == nil then
+        print("[shops] save file unreadable - fresh start.")
+        return
+    end
+    if data.wallets ~= nil then
+        PlayerWallets = data.wallets
+        for key, wallet in pairs(PlayerWallets) do
+            wallet.gold = math.floor(wallet.gold or 6000)
+            for ammoKey, count in pairs(wallet.owned or {}) do
+                wallet.owned[ammoKey] = math.floor(count)
+            end
+        end
+    end
+    if data.stock ~= nil then
+        VendorStock = data.stock
+        for vendorKey, shelf in pairs(VendorStock) do
+            for itemKey, count in pairs(shelf) do
+                shelf[itemKey] = math.floor(count)
+            end
+        end
+    end
+    print("[shops] save loaded: wallets + stock restored.")
 end
 
 -- Does this vendor's sells list open the door for an ammo
@@ -211,6 +289,7 @@ function buyAmmo(playerId, vendorKey, ammoKey, amount, playerCoords)
         wallet.gold = wallet.gold - cost
         shelf[ammoKey] = inStock - amount
         wallet.owned[ammoKey] = (wallet.owned[ammoKey] or 0) + amount
+        saveData()  -- money moved: save NOW, not later
         return true, "Bought " .. amount .. " x " .. item.label ..
                " for " .. cost .. " gold at " .. vendor.label ..
                ". Gold: " .. wallet.gold
@@ -270,6 +349,20 @@ RegisterCommand('restocknow', function(src, args, raw)
     end
 end, false)
 
+-- The other two save points: a player leaving, and the
+-- resource shutting down cleanly. (playerDropped fires
+-- on the server when someone disconnects.)
+AddEventHandler('playerDropped', function(reason)
+    saveData()
+end)
+
+AddEventHandler('onResourceStop', function(resourceName)
+    if resourceName == RESOURCE_NAME then
+        saveData()
+        print("[shops] saved on shutdown.")
+    end
+end)
+
 -- ============================================================
 -- BOOT + THE TIMER THREAD.
 -- CreateThread starts a loop that runs alongside the
@@ -278,7 +371,8 @@ end, false)
 -- each pass is one city hour; every RESTOCK_EVERY hours
 -- the 80% restock fires on its own.
 -- ============================================================
-restockAllVendors(RESTOCK_PERCENT)
+loadData()  -- Lesson 18: yesterday's world first...
+restockAllVendors(RESTOCK_PERCENT)  -- ...then the 80% rule tops up (never drains)
 print("[shops] started. One city hour = " ..
       (TICK_MS // 1000) .. "s; auto-restock every " ..
       RESTOCK_EVERY .. " city hours.")
