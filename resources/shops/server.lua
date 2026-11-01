@@ -41,6 +41,12 @@
 -- QBCore selected in config.lua, the framework's cash
 -- is the truth and our gold field sits unused.
 --
+-- LESSON 23 ADDITION: NEEDS. Hunger + thirst per player
+-- (Lesson 8's vitals, server-owned), draining on the
+-- city timer, an empty stat taxing health, and eating
+-- that spends the food Lesson 21 sells. Details at
+-- NEEDS below.
+--
 -- LESSON 20 ADDITION: a real MENU (NUI). The server
 -- builds each shop's menu (items, prices, live stock,
 -- the asker's gold) and the client's web page just draws
@@ -194,9 +200,16 @@ end
 -- ============================================================
 PlayerWallets = {}
 
+-- Lesson 23: which seat (source) each known player is
+-- in right now, so the needs tick can reach ONLINE
+-- players. Offline hunger simply waits.
+PlayerSources = {}
+
 function playerKey(playerId)
-    return GetPlayerIdentifierByType(playerId, 'license')
+    local key = GetPlayerIdentifierByType(playerId, 'license')
         or ("session:" .. playerId)  -- fallback: never crash
+    PlayerSources[key] = playerId
+    return key
 end
 
 function getWallet(playerId)
@@ -284,6 +297,7 @@ function saveData()
     local payload = json.encode({
         wallets = walletsToSave,
         stock = VendorStock,
+        needs = PlayerNeeds,  -- Lesson 23: saved in EVERY mode
     })
     SaveResourceFile(RESOURCE_NAME, DATA_FILE, payload, -1)
 end
@@ -326,6 +340,16 @@ function loadData()
             end
         end
     end
+    if data.needs ~= nil then
+        PlayerNeeds = data.needs
+        for key, needs in pairs(PlayerNeeds) do
+            -- Floored (JSON decimals) and clamped to 0-100.
+            needs.hunger = math.max(0, math.min(100,
+                math.floor(needs.hunger or 100)))
+            needs.thirst = math.max(0, math.min(100,
+                math.floor(needs.thirst or 100)))
+        end
+    end
     print("[shops] save loaded: wallets + stock restored.")
 end
 
@@ -338,6 +362,81 @@ function vendorSellsAmmo(vendor)
         end
     end
     return false
+end
+
+-- ============================================================
+-- NEEDS (Lesson 23) — hunger + thirst, server-owned.
+-- Lesson 8's vitals as a real system: 100 = full, and
+-- each city hour drains them at Lesson 8's rates. A
+-- stat at zero taxes health: EMPTY_TAX per hour, PER
+-- empty stat (both empty = double tax, as in Lesson 8).
+-- Eating spends ownedFood — the FoodCatalog's hunger/
+-- thirst values, idle since Lesson 21, finally move.
+-- ============================================================
+PlayerNeeds = {}
+
+HUNGER_DRAIN = 10  -- per city hour (Lesson 8)
+THIRST_DRAIN = 15  -- per city hour (Lesson 8)
+EMPTY_TAX = 5      -- health per city hour, per empty stat
+
+function getNeeds(playerId)
+    local key = playerKey(playerId)
+    if PlayerNeeds[key] == nil then
+        PlayerNeeds[key] = { hunger = 100, thirst = 100 }
+    end
+    return PlayerNeeds[key]
+end
+
+function needsLine(needs)
+    return "Hunger: " .. needs.hunger ..
+           " | Thirst: " .. needs.thirst
+end
+
+-- One city hour of being alive, called by the timer
+-- thread. Only ONLINE players drain (PlayerSources
+-- knows their seats). The server DECIDES the health
+-- tax and sends the new levels; the client APPLIES the
+-- tax, because a ped's health lives on the player's
+-- own machine — the same split as everything else.
+function needsTick()
+    for key, needs in pairs(PlayerNeeds) do
+        local src = PlayerSources[key]
+        if src ~= nil then
+            needs.hunger = math.max(0, needs.hunger - HUNGER_DRAIN)
+            needs.thirst = math.max(0, needs.thirst - THIRST_DRAIN)
+            local tax = 0
+            if needs.hunger <= 0 then tax = tax + EMPTY_TAX end
+            if needs.thirst <= 0 then tax = tax + EMPTY_TAX end
+            TriggerClientEvent('shops:needs', src, {
+                hunger = needs.hunger, thirst = needs.thirst,
+                healthTax = tax,
+            })
+        end
+    end
+end
+
+-- Eat or drink one owned food item: the wallet says
+-- whether you have one, the catalog says what it
+-- restores (capped at 100, like Lesson 8).
+function useFood(playerId, foodKey)
+    local wallet = getWallet(playerId)
+    local item = FoodCatalog[foodKey]
+    if item == nil then
+        return false, "No such food: " .. tostring(foodKey)
+    end
+    local have = wallet.ownedFood[foodKey] or 0
+    if have < 1 then
+        return false, "You have no " .. item.label .. "."
+    end
+    wallet.ownedFood[foodKey] = have - 1
+    local needs = getNeeds(playerId)
+    needs.hunger = math.min(100, needs.hunger + (item.hunger or 0))
+    needs.thirst = math.min(100, needs.thirst + (item.thirst or 0))
+    saveData()
+    local verb = "Ate"
+    if item.hunger == nil then verb = "Drank" end
+    return true, verb .. " 1 x " .. item.label .. ". " ..
+           needsLine(needs), needs
 end
 
 -- ============================================================
@@ -721,6 +820,30 @@ AddEventHandler('shops:buyItem', function(vendorKey, kind, key, amount)
     end
 end)
 
+RegisterNetEvent('shops:useFood')
+AddEventHandler('shops:useFood', function(foodKey)
+    local playerId = source
+    local ok, message, needs = useFood(playerId, foodKey)
+    TriggerClientEvent('shops:result', playerId, message)
+    if needs ~= nil then
+        TriggerClientEvent('shops:needs', playerId, {
+            hunger = needs.hunger, thirst = needs.thirst,
+            healthTax = 0,
+        })
+    end
+end)
+
+RegisterNetEvent('shops:getNeeds')
+AddEventHandler('shops:getNeeds', function()
+    local playerId = source
+    local needs = getNeeds(playerId)
+    TriggerClientEvent('shops:result', playerId, needsLine(needs))
+    TriggerClientEvent('shops:needs', playerId, {
+        hunger = needs.hunger, thirst = needs.thirst,
+        healthTax = 0,
+    })
+end)
+
 RegisterNetEvent('shops:getWallet')
 AddEventHandler('shops:getWallet', function()
     TriggerClientEvent('shops:wallet', source,
@@ -742,6 +865,8 @@ end, false)
 -- resource shutting down cleanly. (playerDropped fires
 -- on the server when someone disconnects.)
 AddEventHandler('playerDropped', function(reason)
+    local key = playerKey(source)
+    PlayerSources[key] = nil  -- seat's empty: stop ticking them
     saveData()
 end)
 
@@ -771,6 +896,7 @@ CreateThread(function()
     while true do
         Wait(TICK_MS)
         cityBuys()
+        needsTick()  -- Lesson 23: the city gets hungry too
         sinceRestock = sinceRestock + 1
         if sinceRestock >= RESTOCK_EVERY then
             print("[shops] auto-restock (timer):")

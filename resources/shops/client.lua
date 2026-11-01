@@ -176,6 +176,27 @@ RegisterCommand('shop', function(source, args, raw)
     openShopMenu()
 end, false)
 
+-- /buyfood glizzyDog 2 — the chat form of the food
+-- counters (Lesson 21). It buys from the shop you're
+-- STANDING at, through the same shops:buyItem door as
+-- the menu — the server re-checks that shop's sells
+-- list, shelf, range, and your gold.
+RegisterCommand('buyfood', function(source, args, raw)
+    local foodKey = args[1]
+    local amount = tonumber(args[2]) or 1
+    if foodKey == nil then
+        say("Usage: /buyfood <foodKey> [amount]  e.g. /buyfood glizzyDog 2")
+        return
+    end
+    local vendorKey = nearestShopInRange()
+    if vendorKey == nil then
+        say("No shop in range - stand at a shop blip.")
+    else
+        TriggerServerEvent('shops:buyItem', vendorKey,
+                           'food', foodKey, amount)
+    end
+end, false)
+
 -- The E key: this thread watches where you stand. Near
 -- a shop it shows the prompt, and E asks for the menu.
 CreateThread(function()
@@ -197,13 +218,79 @@ CreateThread(function()
 end)
 
 -- ============================================================
+-- LESSON 23: NEEDS — the client wears the body.
+-- The server owns hunger/thirst and DECIDES any health
+-- tax; this side APPLIES it, because your ped's health
+-- lives on your machine. The latest levels also draw
+-- as a small HUD line so you can watch yourself drain.
+-- ============================================================
+local lastNeeds = nil
+
+RegisterNetEvent('shops:needs')
+AddEventHandler('shops:needs', function(needs)
+    lastNeeds = needs
+    if needs.healthTax ~= nil and needs.healthTax > 0 then
+        local ped = PlayerPedId()
+        local hp = GetEntityHealth(ped)
+        -- Floored at 101: hunger alone brings you to
+        -- the brink, it doesn't finish you.
+        SetEntityHealth(ped, math.max(101, hp - needs.healthTax))
+    end
+end)
+
+-- /eat glizzyDog / /drink water — one event, the server
+-- sorts out which verb it was.
+RegisterCommand('eat', function(source, args, raw)
+    if args[1] == nil then
+        say("Usage: /eat <foodKey>  e.g. /eat glizzyDog")
+    else
+        TriggerServerEvent('shops:useFood', args[1])
+    end
+end, false)
+
+RegisterCommand('drink', function(source, args, raw)
+    if args[1] == nil then
+        say("Usage: /drink <foodKey>  e.g. /drink water")
+    else
+        TriggerServerEvent('shops:useFood', args[1])
+    end
+end, false)
+
+-- /needs — ask the server how you're doing.
+RegisterCommand('needs', function(source, args, raw)
+    TriggerServerEvent('shops:getNeeds')
+end, false)
+
+-- The HUD line: redrawn every frame once the server
+-- has sent levels (after /needs, eating, or a tick).
+CreateThread(function()
+    while true do
+        Wait(0)
+        if lastNeeds ~= nil then
+            SetTextFont(4)
+            SetTextScale(0.42, 0.42)
+            SetTextColour(232, 228, 216, 255)
+            SetTextEntry('STRING')
+            AddTextComponentString("Hunger: " .. lastNeeds.hunger ..
+                                   "   Thirst: " .. lastNeeds.thirst)
+            DrawText(0.015, 0.94)
+        end
+    end
+end)
+
+-- ============================================================
 -- TRY IT in game (server running, resource ensured):
 --   THE MENU (Lesson 20): stand at any shop blip and
 --   press E (or type /shop) — a window opens with the
 --   shop's prices, live stock, and your gold. Buy from
 --   the window and watch the numbers update in place.
---   Glizzys + Tummy Express answer "no counter yet" —
---   their food counters are a later lesson.
+--   Glizzys + Tummy Express sell FOOD (Lesson 21):
+--   dogs + water at Glizzys, beans + energy drinks at
+--   Tummy Express — in the menu, or /buyfood glizzyDog 2.
+--   NEEDS (Lesson 23): /needs shows hunger + thirst;
+--   they drain every city hour and a HUD line appears.
+--   /eat glizzyDog / /drink water spend your pack —
+--   and if a stat sits at zero, your health pays.
 --   Right after spawning, far from any shop:
 --   /buyammo pistolAmmo 20   -> refused: not AT the shop
 --   /whereami                -> names the nearest one
