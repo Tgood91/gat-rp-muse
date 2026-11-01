@@ -176,6 +176,27 @@ RegisterCommand('shop', function(source, args, raw)
     openShopMenu()
 end, false)
 
+-- /buyfood glizzyDog 2 — the chat form of the food
+-- counters (Lesson 21). It buys from the shop you're
+-- STANDING at, through the same shops:buyItem door as
+-- the menu — the server re-checks that shop's sells
+-- list, shelf, range, and your gold.
+RegisterCommand('buyfood', function(source, args, raw)
+    local foodKey = args[1]
+    local amount = tonumber(args[2]) or 1
+    if foodKey == nil then
+        say("Usage: /buyfood <foodKey> [amount]  e.g. /buyfood glizzyDog 2")
+        return
+    end
+    local vendorKey = nearestShopInRange()
+    if vendorKey == nil then
+        say("No shop in range - stand at a shop blip.")
+    else
+        TriggerServerEvent('shops:buyItem', vendorKey,
+                           'food', foodKey, amount)
+    end
+end, false)
+
 -- The E key: this thread watches where you stand. Near
 -- a shop it shows the prompt, and E asks for the menu.
 CreateThread(function()
@@ -202,8 +223,9 @@ end)
 --   press E (or type /shop) — a window opens with the
 --   shop's prices, live stock, and your gold. Buy from
 --   the window and watch the numbers update in place.
---   Glizzys + Tummy Express answer "no counter yet" —
---   their food counters are a later lesson.
+--   Glizzys + Tummy Express sell FOOD (Lesson 21):
+--   dogs + water at Glizzys, beans + energy drinks at
+--   Tummy Express — in the menu, or /buyfood glizzyDog 2.
 --   Right after spawning, far from any shop:
 --   /buyammo pistolAmmo 20   -> refused: not AT the shop
 --   /whereami                -> names the nearest one
