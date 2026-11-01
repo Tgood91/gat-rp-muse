@@ -58,7 +58,9 @@
 -- LESSON 28 ADDITION: JOBS. The counters' mirror image:
 -- instead of spending gold at a spot, you EARN it there.
 -- /work starts a shift at a job spot (Lesson 3's three
--- jobs and pays, now at real map spots from config.lua);
+-- jobs and pays, now at real map spots from config.lua,
+-- plus three of Tanner's own added before the merge:
+-- police 25, sign spinner 10, tech mogul 50 per hour);
 -- the server stamps the start on its own clock, and
 -- /collect pays through the Lesson 25 bridge once the
 -- shift has actually run. Details at JOBS below.
@@ -743,7 +745,8 @@ function startShift(playerId, jobKey, playerCoords)
     local job = Config.Jobs[jobKey]
     if job == nil then
         return false, "No such job: " .. tostring(jobKey) ..
-               " (mechanic, taxi, delivery)"
+               " (mechanic, taxi, delivery, policeOfficer," ..
+               " signSpinner, techMogul)"
     end
     local key = playerKey(playerId)
     if PlayerShifts[key] ~= nil then

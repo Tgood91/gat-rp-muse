@@ -352,7 +352,7 @@ end)
 -- ============================================================
 RegisterCommand('work', function(source, args, raw)
     if args[1] == nil then
-        say("Usage: /work <mechanic|taxi|delivery>")
+        say("Usage: /work <mechanic|taxi|delivery|policeOfficer|signSpinner|techMogul>")
     else
         TriggerServerEvent('shops:work', args[1])
     end

@@ -89,4 +89,31 @@ Config.Jobs = {
         blipColour = 2,    -- green
         pay = 100,
     },
+    -- Three more of Tanner's (added to Lesson 28 before
+    -- its merge, at his word): pays are per hour — and a
+    -- shift IS one city hour, so per-shift is per-hour.
+    policeOfficer = {
+        label = "Police Officer",
+        place = "Mission Row Police Station",
+        coords = vector3(441.6, -982.9, 30.7),   -- Mission Row PD, front door
+        blip = 60,         -- police station icon
+        blipColour = 3,    -- blue
+        pay = 25,
+    },
+    signSpinner = {
+        label = "Sign Spinner",
+        place = "Legion Square",
+        coords = vector3(215.3, -919.9, 30.7),   -- Legion Square corner, downtown
+        blip = 108,
+        blipColour = 5,    -- yellow
+        pay = 10,
+    },
+    techMogul = {
+        label = "Tech Mogul",
+        place = "Maze Bank Tower",
+        coords = vector3(-75.2, -818.9, 36.6),   -- Maze Bank Tower plaza, Pillbox Hill
+        blip = 434,
+        blipColour = 3,    -- blue
+        pay = 50,
+    },
 }
