@@ -46,8 +46,8 @@ imports = {
         tank = 90, health = 200, jobBonus = 0,
         special = "Armored body: 200 health instead of 100",
     },
-    voltic = {
-        name = "Voltic (Electric)", price = 2000, topSpeed = 180,
+    zipzap = {
+        name = "ZipZap", price = 2000, topSpeed = 180,
         tank = 50, health = 100, jobBonus = 0,
         special = "Electric: near-silent, fastest thing you own",
     },
