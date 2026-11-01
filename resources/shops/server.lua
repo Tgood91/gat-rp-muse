@@ -35,6 +35,12 @@
 -- in the name cleanup. Same recipe as buyAmmo; the
 -- range check is now shared by both counters.
 --
+-- LESSON 25 NOTE: every gold read/move below goes
+-- through the framework bridge (Fw, framework.lua) —
+-- standalone it lands in these wallets; with ESX or
+-- QBCore selected in config.lua, the framework's cash
+-- is the truth and our gold field sits unused.
+--
 -- LESSON 20 ADDITION: a real MENU (NUI). The server
 -- builds each shop's menu (items, prices, live stock,
 -- the asker's gold) and the client's web page just draws
@@ -231,9 +237,52 @@ end
 local RESOURCE_NAME = GetCurrentResourceName()
 local DATA_FILE = "data.json"
 
+-- ============================================================
+-- STANDALONE MONEY (Lesson 25) — the bridge's home room.
+-- framework.lua's Fw calls these when Config.Framework
+-- is "standalone". Under esx/qbcore they're never
+-- called: the framework's cash is the money.
+-- ============================================================
+StandaloneMoney = {
+    Get = function(playerId)
+        return getWallet(playerId).gold
+    end,
+    Remove = function(playerId, amount)
+        local wallet = getWallet(playerId)
+        if wallet.gold < amount then
+            return false
+        end
+        wallet.gold = wallet.gold - amount
+        return true
+    end,
+    Add = function(playerId, amount)
+        local wallet = getWallet(playerId)
+        wallet.gold = wallet.gold + amount
+        return true
+    end,
+}
+
+-- The one gold question every counter asks.
+function playerGold(playerId)
+    return Fw.GetMoney(playerId)
+end
+
 function saveData()
+    local walletsToSave = PlayerWallets
+    if Fw.Mode ~= "standalone" then
+        -- The framework owns the money: save ITEMS only,
+        -- so a restart can never resurrect stale gold.
+        walletsToSave = {}
+        for key, wallet in pairs(PlayerWallets) do
+            walletsToSave[key] = {
+                owned = wallet.owned,
+                ownedArmour = wallet.ownedArmour,
+                ownedFood = wallet.ownedFood,
+            }
+        end
+    end
     local payload = json.encode({
-        wallets = PlayerWallets,
+        wallets = walletsToSave,
         stock = VendorStock,
     })
     SaveResourceFile(RESOURCE_NAME, DATA_FILE, payload, -1)
@@ -253,7 +302,11 @@ function loadData()
     if data.wallets ~= nil then
         PlayerWallets = data.wallets
         for key, wallet in pairs(PlayerWallets) do
-            wallet.gold = math.floor(wallet.gold or 6000)
+            if Fw.Mode == "standalone" then
+                wallet.gold = math.floor(wallet.gold or 6000)
+            else
+                wallet.gold = nil  -- framework mode: never restore our gold
+            end
             for ammoKey, count in pairs(wallet.owned or {}) do
                 wallet.owned[ammoKey] = math.floor(count)
             end
@@ -348,17 +401,17 @@ function buyAmmo(playerId, vendorKey, ammoKey, amount, playerCoords)
     if inStock < amount then
         return false, vendor.label .. " has " .. inStock ..
                " x " .. item.label .. " - not enough."
-    elseif wallet.gold < cost then
+    elseif playerGold(playerId) < cost then
         return false, "Not enough gold: " .. amount .. " x " ..
                item.label .. " costs " .. cost .. "."
     else
-        wallet.gold = wallet.gold - cost
+        Fw.RemoveMoney(playerId, cost)
         shelf[ammoKey] = inStock - amount
         wallet.owned[ammoKey] = (wallet.owned[ammoKey] or 0) + amount
         saveData()  -- money moved: save NOW, not later
         return true, "Bought " .. amount .. " x " .. item.label ..
                " for " .. cost .. " gold at " .. vendor.label ..
-               ". Gold: " .. wallet.gold
+               ". Gold: " .. playerGold(playerId)
     end
 end
 
@@ -415,11 +468,11 @@ function buyArmour(playerId, vendorKey, armourKey, amount, playerCoords)
     if inStock < amount then
         return false, vendor.label .. " has " .. inStock ..
                " x " .. item.label .. " - not enough."
-    elseif wallet.gold < cost then
+    elseif playerGold(playerId) < cost then
         return false, "Not enough gold: " .. amount .. " x " ..
                item.label .. " costs " .. cost .. "."
     else
-        wallet.gold = wallet.gold - cost
+        Fw.RemoveMoney(playerId, cost)
         shelf[armourKey] = inStock - amount
         wallet.ownedArmour[armourKey] =
             (wallet.ownedArmour[armourKey] or 0) + amount
@@ -427,7 +480,7 @@ function buyArmour(playerId, vendorKey, armourKey, amount, playerCoords)
         return true, "Bought " .. amount .. " x " .. item.label ..
                " (" .. item.protection .. " protection) for " ..
                cost .. " gold at " .. vendor.label ..
-               ". Gold: " .. wallet.gold
+               ". Gold: " .. playerGold(playerId)
     end
 end
 
@@ -470,18 +523,18 @@ function buyFood(playerId, vendorKey, foodKey, amount, playerCoords)
     if inStock < amount then
         return false, vendor.label .. " has " .. inStock ..
                " x " .. item.label .. " - not enough."
-    elseif wallet.gold < cost then
+    elseif playerGold(playerId) < cost then
         return false, "Not enough gold: " .. amount .. " x " ..
                item.label .. " costs " .. cost .. "."
     else
-        wallet.gold = wallet.gold - cost
+        Fw.RemoveMoney(playerId, cost)
         shelf[foodKey] = inStock - amount
         wallet.ownedFood[foodKey] =
             (wallet.ownedFood[foodKey] or 0) + amount
         saveData()  -- money moved: save NOW, not later
         return true, "Bought " .. amount .. " x " .. item.label ..
                " for " .. cost .. " gold at " .. vendor.label ..
-               ". Gold: " .. wallet.gold
+               ". Gold: " .. playerGold(playerId)
     end
 end
 
@@ -509,7 +562,7 @@ function walletSummary(playerId)
             (wallet.ownedFood[key] or 0) .. " " ..
             FoodCatalog[key].label
     end
-    return "Gold: " .. wallet.gold .. " | Ammo: " ..
+    return "Gold: " .. playerGold(playerId) .. " | Ammo: " ..
            table.concat(parts, ", ") .. " | Armour: " ..
            table.concat(armourParts, ", ") .. " | Food: " ..
            table.concat(foodParts, ", ")
@@ -619,7 +672,7 @@ function menuFor(playerId, vendorKey)
     end
     return {
         vendorKey = vendorKey, vendor = vendor.label,
-        gold = wallet.gold, items = items,
+        gold = playerGold(playerId), items = items,
     }
 end
 
