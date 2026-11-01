@@ -85,6 +85,7 @@ after editing a file — no full server restart needed).
    | Real buy | `/buyammo pistolAmmo 20` | "Bought 20 x Pistol Rounds for 20 gold at Tanaz Ammo. Gold: 5980" |
    | Wallet | `/wallet` | gold + owned ammo counts |
    | Armour counter | drive to the **Bushido Supply** blip (Little Seoul Ammu-Nation), `/buyarmor lowArmor` | "Bought 1 x Low Armour Vest (25 protection) for 200 gold at Bushido Supply. Gold: 5780" |
+   | **The menu** | stand at the Tanaz blip, press **E** (or `/shop`) | a shop window opens — prices, live stock, your gold. Buy 20 pistol rounds *in the window*: gold and stock update in the window itself. Esc closes it |
    | Timer | wait ~4 minutes, watch the server console | auto-restock fires on its own |
 
 Every new player starts with a 6000-gold wallet. Since Lesson 18,
