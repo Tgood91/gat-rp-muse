@@ -53,6 +53,8 @@ lesson has real code — no empty lessons.
   - `wired_systems.lua` — the older systems read the registries: a category map (`Registries`) lets one `buyFromVendor()` sell armour, firearms, and ammo; `VendorStock` tracks what each vendor actually has (separate from what it *can* sell); `stockCustomAmmo()` restocks vendor shelves; and Lesson 11's importer reads `CustomVehicles` via `importCustomVehicle()`. Adds Bushido Supply (a gear vendor at the gun store) and Tanaz0lam Ammo (all ammo: base types merged with the custom ones in one `AmmoCatalog`), plus `restockAllVendors(80)` — every vendor's shelves topped UP TO 80% of capacity (fills only, never drains).
 - **Lesson 15 — Restock timer** (`resources/custom/`)
   - `restock_timer.lua` — the 80% rule on a clock: a tick loop (`runCity`) where each pass is one game hour, a `Demand` rate table drains every shelf (the city buys too; `math.min` keeps a shelf from selling below zero), and a counter fires `restockAllVendors(80)` by itself every 4 hours — no human call. Shelves saw-tooth: drain, drain, drain, snap back to 80%.
+- **Lesson 16 — First FiveM resource** (`resources/shops/`)
+  - `fxmanifest.lua`, `server.lua`, `client.lua` — the vendor system as a real FiveM resource: the server owns vendors, stock, per-player wallets, and the restock timer (a `CreateThread` loop; 1 city hour = 60s so you can watch it); the client only asks. `/buyammo pistolAmmo 20` sends an event, the server re-checks everything (a modded client can't be trusted) and replies with the result; `/wallet` reports gold + owned ammo; `restocknow` in the server console forces the 80% restock.
 
 ## Notes
 
