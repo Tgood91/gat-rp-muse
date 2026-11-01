@@ -21,8 +21,8 @@ Config = {}
 Config.BuyRange = 5.0
 
 Config.Vendors = {
-    tanaz0lamAmmo = {
-        label = "Tanaz0lam Ammo",
+    tanazAmmo = {
+        label = "Tanaz Ammo",
         coords = vector3(842.4, -1033.4, 28.2),  -- Ammu-Nation, east LS
         blip = 110,        -- Ammu-Nation gun icon
         blipColour = 17,   -- orange
@@ -40,7 +40,7 @@ Config.Vendors = {
         blipColour = 5,    -- yellow
     },
     tummyExpress = {
-        label = "Tanazolam-tummy Express",
+        label = "Tanaz-tummy Express",
         coords = vector3(25.7, -1346.6, 29.5),   -- 24/7 store, Strawberry
         blip = 52,         -- store icon
         blipColour = 2,    -- green

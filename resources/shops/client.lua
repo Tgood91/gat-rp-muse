@@ -105,8 +105,8 @@ end)
 --   Right after spawning, far from any shop:
 --   /buyammo pistolAmmo 20   -> refused: not AT the shop
 --   /whereami                -> names the nearest one
---   Drive to the Tanaz0lam Ammo blip (Ammu-Nation icon):
---   /whereami                -> "You are at Tanaz0lam Ammo."
+--   Drive to the Tanaz Ammo blip (Ammu-Nation icon):
+--   /whereami                -> "You are at Tanaz Ammo."
 --   /buyammo pistolAmmo 20   -> bought, gold 5980
 --   /wallet                  -> your gold + ammo counts
 --   /coords                  -> your exact position:

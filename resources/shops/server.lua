@@ -31,15 +31,16 @@ CustomVendors = {
         sells = { "fuel", "glizzyDog", "water" },
     },
     tummyExpress = {
-        label = "Tanazolam-tummy Express", place = "tummy2",
+        label = "Tanaz-tummy Express", place = "tummy2",
         sells = { "beans", "energyDrink" },
     },
     bushidoSupply = {
         label = "Bushido Supply", place = "gunStore",
-        sells = { "armour", "firearms", "ammo" },
+        sells = { "armour" },  -- armour ONLY: ammo is Tanaz Ammo's
+                               -- whole job (name cleanup, per Tanner)
     },
-    tanaz0lamAmmo = {
-        label = "Tanaz0lam Ammo", place = "gunStore",
+    tanazAmmo = {
+        label = "Tanaz Ammo", place = "gunStore",
         sells = { "ammo" },  -- the category: EVERY ammo type
     },
 }
@@ -53,7 +54,7 @@ AmmoCatalog = {
 }
 AMMO_ORDER = { "ammo", "pistolAmmo", "rounds556", "shells12" }
 
-VendorOrder = { "glizzysDepot", "tummyExpress", "bushidoSupply", "tanaz0lamAmmo" }
+VendorOrder = { "glizzysDepot", "tummyExpress", "bushidoSupply", "tanazAmmo" }
 
 VendorCapacity = {
     glizzysDepot = { fuel = 200, glizzyDog = 20, water = 50 },
@@ -63,7 +64,7 @@ VendorCapacity = {
         bushidoCarbine = 2, harborShotgun = 2,
         rounds556 = 200, shells12 = 100,
     },
-    tanaz0lamAmmo = {
+    tanazAmmo = {
         ammo = 1000, pistolAmmo = 500,
         rounds556 = 250, shells12 = 100,
     },
@@ -80,7 +81,7 @@ Demand = {
         bushidoCarbine = 0, harborShotgun = 0,
         rounds556 = 20, shells12 = 5,
     },
-    tanaz0lamAmmo = {
+    tanazAmmo = {
         ammo = 60, pistolAmmo = 35,
         rounds556 = 15, shells12 = 6,
     },
@@ -162,8 +163,9 @@ end
 -- a modified client can lie, this function can't be
 -- reached around. Amount is treated as hostile input:
 -- forced through tonumber and floored before any math.
--- This lesson's shop sells ammo only, from Tanaz0lam
--- Ammo and Bushido Supply. Gear is a later lesson.
+-- This resource's buy flow sells ammo only, from Tanaz
+-- Ammo. Bushido Supply is armour-only, and gear buying
+-- gets its own event in a later lesson.
 -- ============================================================
 function buyAmmo(playerId, vendorKey, ammoKey, amount, playerCoords)
     local wallet = getWallet(playerId)
@@ -245,8 +247,8 @@ AddEventHandler('shops:buyAmmo', function(ammoKey, amount)
     -- event: event data comes from the client, coords
     -- from the ped come from the game itself.
     local coords = GetEntityCoords(GetPlayerPed(playerId))
-    -- This lesson's counter is Tanaz0lam Ammo: ALL ammo.
-    local ok, message = buyAmmo(playerId, "tanaz0lamAmmo",
+    -- This lesson's counter is Tanaz Ammo: ALL ammo.
+    local ok, message = buyAmmo(playerId, "tanazAmmo",
                                 ammoKey, amount, coords)
     TriggerClientEvent('shops:result', playerId, message)
 end)
