@@ -9,6 +9,7 @@ resources/
   inventory/   player inventory + shop prices (Lesson 1)
   cars/        car system — key, fuel, engine, driving (Lesson 2)
   jobs/        jobs that pay gold (Lesson 3)
+  weapons/     equip + shoot, per-weapon ammo (Lesson 4)
 ```
 
 Coming later: maps. Rule of the repo: a folder is only created when its
@@ -22,7 +23,9 @@ lesson has real code — no empty lessons.
 - **Lesson 2 — Cars** (`resources/cars/`)
   - `cars.lua` — a car as slots (model, speed, fuel) with a boolean `engineOn`. `startCar()` checks key first, then fuel; `drive()` costs fuel; `refuel()` spends a fuel can from the inventory and caps the tank at 100. Borrows `carKey` and `fuelCan` from Lesson 1.
 - **Lesson 3 — Jobs** (`resources/jobs/`)
-  - `jobs.lua` — earning instead of spending: two jobs (mechanic, taxi driver) picked with an `elseif` chain, `workShift()` pays gold into the same wallet the shop spends from. The taxi job needs the car from Lesson 2.
+  - `jobs.lua` — earning instead of spending: three jobs (mechanic 80, taxi 40, delivery 100) picked with an `elseif` chain, `workShift()` pays gold into the same wallet the shop spends from. Taxi and delivery need the car key from Lesson 1.
+- **Lesson 4 — Weapons** (`resources/weapons/`)
+  - `weapons.lua` — equip what you own (`equipWeapon`), `shoot()` spends from the equipped weapon's own ammo pool: pistol 1 round per shot, AR-15 a 3-round burst with a 3-round check.
 
 ## Notes
 
