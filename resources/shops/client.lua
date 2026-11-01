@@ -116,7 +116,94 @@ AddEventHandler('shops:wallet', function(summary)
 end)
 
 -- ============================================================
+-- LESSON 20: THE MENU — a real shop window (NUI).
+-- Stand at a shop, press E (or /shop): the client asks
+-- the server for that shop's menu, the server builds it
+-- (items, prices, live stock, YOUR gold — it owns all
+-- of that), and the page in html/index.html draws it.
+-- Clicks come back through RegisterNUICallback and are
+-- forwarded as 'shops:buyItem' — landing in the SAME
+-- server checks as the chat commands. The menu replaced
+-- the typing; it did not replace the counters.
+-- ============================================================
+local menuOpen = false
+
+RegisterNetEvent('shops:menu')
+AddEventHandler('shops:menu', function(menu)
+    menuOpen = true
+    SetNuiFocus(true, true)
+    SendNUIMessage({ action = 'open', menu = menu })
+end)
+
+-- The page's Buy button lands here. The page sends what
+-- was clicked; the client forwards it untouched — the
+-- server will re-check every bit of it anyway.
+RegisterNUICallback('buy', function(data, cb)
+    TriggerServerEvent('shops:buyItem', data.vendorKey,
+                       data.kind, data.key, data.amount)
+    cb('ok')
+end)
+
+RegisterNUICallback('close', function(data, cb)
+    menuOpen = false
+    SetNuiFocus(false, false)
+    cb('ok')
+end)
+
+-- The shop you're standing at, if any. (Client-side
+-- convenience only — the server re-checks for real.)
+function nearestShopInRange()
+    local me = GetEntityCoords(PlayerPedId())
+    for vendorKey, spot in pairs(Config.Vendors) do
+        if #(me - spot.coords) <= Config.BuyRange then
+            return vendorKey, spot
+        end
+    end
+    return nil, nil
+end
+
+function openShopMenu()
+    local vendorKey = nearestShopInRange()
+    if vendorKey == nil then
+        say("No shop in range - stand at a shop blip.")
+    else
+        TriggerServerEvent('shops:getMenu', vendorKey)
+    end
+end
+
+-- /shop — the command form of pressing E.
+RegisterCommand('shop', function(source, args, raw)
+    openShopMenu()
+end, false)
+
+-- The E key: this thread watches where you stand. Near
+-- a shop it shows the prompt, and E asks for the menu.
+CreateThread(function()
+    while true do
+        Wait(0)
+        if not menuOpen then
+            local vendorKey, spot = nearestShopInRange()
+            if spot ~= nil then
+                BeginTextCommandDisplayHelp('STRING')
+                AddTextComponentSubstringPlayerName(
+                    "Press E to open " .. spot.label)
+                EndTextCommandDisplayHelp(0, false, true, -1)
+                if IsControlJustReleased(0, 38) then  -- 38 = E
+                    openShopMenu()
+                end
+            end
+        end
+    end
+end)
+
+-- ============================================================
 -- TRY IT in game (server running, resource ensured):
+--   THE MENU (Lesson 20): stand at any shop blip and
+--   press E (or type /shop) — a window opens with the
+--   shop's prices, live stock, and your gold. Buy from
+--   the window and watch the numbers update in place.
+--   Glizzys + Tummy Express answer "no counter yet" —
+--   their food counters are a later lesson.
 --   Right after spawning, far from any shop:
 --   /buyammo pistolAmmo 20   -> refused: not AT the shop
 --   /whereami                -> names the nearest one
