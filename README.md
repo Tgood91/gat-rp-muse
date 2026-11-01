@@ -12,6 +12,7 @@ resources/
   weapons/     equip + shoot, per-weapon ammo (Lesson 4)
   vendors/     vendors + buying ammo (Lesson 5)
   repairs/     the mechanic shop + car health (Lesson 6)
+  maps/        locations, coordinates, travel (Lesson 7)
 ```
 
 Coming later: maps. Rule of the repo: a folder is only created when its
@@ -32,6 +33,8 @@ lesson has real code — no empty lessons.
   - `vendors.lua` — a vendor is a place: you can only buy while you're there. `buyAmmo()` runs the full counter: cost = price × amount, checks vendor stock *and* your gold, then moves all three — gold down, your ammo up, shelf stock down. Buys at Lesson 1 prices (AR 2/round, pistol 1/round).
 - **Lesson 6 — Vehicle repairs** (`resources/repairs/`)
   - `repairs.lua` — the car gets a `carHealth` slot (0–100). The mechanic shop is the second vendor: `buyPart()` sells repair kits (200) and fuel cans (25), `useRepairKit()` spends a kit to heal the car +30, capped at 100. Buy → hold → use, across three systems.
+- **Lesson 7 — Maps** (`resources/maps/`)
+  - `maps.lua` — places as name + (x, y) coordinates. `travelTo()` computes distance with `math.sqrt`, charges 1 fuel per unit, and moves you; vendors only open when you're standing at their location, so the map locks Lessons 5–6 together.
 
 ## Notes
 
