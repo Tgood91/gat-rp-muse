@@ -5,7 +5,7 @@
 -- Plain Lua, no game-engine functions, no dependencies.
 --
 -- THE PROBLEM: Tanner adds two chains — Glizzys-2-Go with
--- 8 locations and Tanazolam-tummy with 4. Twelve new places
+-- 8 locations and Tanaz-tummy with 4. Twelve new places
 -- would mean twelve more elseif branches in travelTo.
 -- Too many. Time for the big one:
 --
@@ -22,7 +22,7 @@
 --      keeps this lesson readable.)
 --   4. Menus differ by chain: Glizzys sells fuel + dogs +
 --      water, 2-Go sells dogs + water (no pumps!),
---      Tanazolam-tummy sells beans + energy drinks.
+--      Tanaz-tummy sells beans + energy drinks.
 --
 -- Prices are the Lesson 1 list: dog 50, water 10,
 -- beans 15, energy drink 20, fuel 2 per unit.
@@ -43,7 +43,7 @@ gasDogs = 8             -- Glizzys Gas warmer
 gasWater = 24           -- Glizzys Gas cooler
 twoGoDogs = 12          -- Glizzys-2-Go, all 8 stores
 twoGoWater = 30
-tummyBeans = 15         -- Tanazolam-tummy, all 4 stores
+tummyBeans = 15         -- Tanaz-tummy, all 4 stores
 tummyDrinks = 10
 
 -- ============================================================
@@ -64,10 +64,10 @@ locations = {
     g2g7 = { name = "Glizzys-2-Go (Riverside)", x = -3, y = -5, vendor = "glizzys2go" },
     g2g8 = { name = "Glizzys-2-Go (Highway)",   x = 10, y = 14, vendor = "glizzys2go" },
 
-    tummy1 = { name = "Tanazolam-tummy (Original)", x = 1,  y = 3,  vendor = "tanazolam" },
-    tummy2 = { name = "Tanazolam-tummy (Mall)",     x = 8,  y = 5,  vendor = "tanazolam" },
-    tummy3 = { name = "Tanazolam-tummy (Campus)",   x = -4, y = 8,  vendor = "tanazolam" },
-    tummy4 = { name = "Tanazolam-tummy (Harbor)",   x = 12, y = -3, vendor = "tanazolam" },
+    tummy1 = { name = "Tanaz-tummy (Original)", x = 1,  y = 3,  vendor = "tanaz" },
+    tummy2 = { name = "Tanaz-tummy (Mall)",     x = 8,  y = 5,  vendor = "tanaz" },
+    tummy3 = { name = "Tanaz-tummy (Campus)",   x = -4, y = 8,  vendor = "tanaz" },
+    tummy4 = { name = "Tanaz-tummy (Harbor)",   x = 12, y = -3, vendor = "tanaz" },
 }
 
 -- Where you are
@@ -130,7 +130,7 @@ end
 -- ============================================================
 -- BUY A SNACK — the menu depends on the vendor tag
 -- glizzysGas / glizzys2go: dogs + water
--- tanazolam: beans + energy drinks
+-- tanaz: beans + energy drinks
 -- anywhere else: no snacks
 -- ============================================================
 function buySnack(kind, amount)
@@ -143,7 +143,7 @@ function buySnack(kind, amount)
             return
         end
     elseif kind == "beans" or kind == "energyDrink" then
-        if vendor ~= "tanazolam" then
+        if vendor ~= "tanaz" then
             print(place.name .. " doesn't sell " .. kind .. ".")
             return
         end
@@ -188,7 +188,7 @@ function buySnack(kind, amount)
     elseif kind == "beans" then
         local cost = amount * 15
         if tummyBeans < amount then
-            print("Tanazolam-tummy only has " .. tummyBeans .. " beans left.")
+            print("Tanaz-tummy only has " .. tummyBeans .. " beans left.")
         elseif gold < cost then
             print("Not enough gold: " .. amount .. " beans cost " .. cost .. ".")
         else
@@ -201,7 +201,7 @@ function buySnack(kind, amount)
     elseif kind == "energyDrink" then
         local cost = amount * 20
         if tummyDrinks < amount then
-            print("Tanazolam-tummy only has " .. tummyDrinks .. " energy drinks left.")
+            print("Tanaz-tummy only has " .. tummyDrinks .. " energy drinks left.")
         elseif gold < cost then
             print("Not enough gold: " .. amount .. " energy drinks cost " .. cost .. ".")
         else
@@ -232,7 +232,7 @@ end
 -- TRY IT — one chain feeds you, the other refuses politely
 -- ============================================================
 whereAmI()                  -- home, gold 200
-travelTo("tummy1")          -- the original Tanazolam-tummy
+travelTo("tummy1")          -- the original Tanaz-tummy
 buySnack("beans", 2)        -- 2 x 15 = 30 -> gold 170, beans 2
 buySnack("glizzyDog", 1)    -- refused: wrong chain's menu
 travelTo("g2g5")            -- Glizzys-2-Go (East)
