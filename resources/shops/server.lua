@@ -47,6 +47,14 @@
 -- that spends the food Lesson 24 sells. Details at
 -- NEEDS below.
 --
+-- LESSON 27 ADDITION: FUEL. Glizzys' fuel shelf finally
+-- sells: buyFuel pumps into the tank of the vehicle the
+-- buyer is sitting in. The tank level lives only on the
+-- client, so the client SENDS its reading and the
+-- server bounds it (0-100, room left) instead of
+-- trusting it — and the client applies the fuel only
+-- after the server approves the sale.
+--
 -- LESSON 20 ADDITION: a real MENU (NUI). The server
 -- builds each shop's menu (items, prices, live stock,
 -- the asker's gold) and the client's web page just draws
@@ -65,7 +73,7 @@
 CustomVendors = {
     glizzysDepot = {
         label = "Glizzys Depot", place = "g2g1",
-        sells = { "food" },  -- Lesson 24: category form, like ammo/armour (fuel has no counter yet — a later lesson)
+        sells = { "food", "fuel" },  -- food (Lesson 24) + the pumps (Lesson 27)
     },
     tummyExpress = {
         label = "Tanaz-tummy Express", place = "tummy2",
@@ -637,6 +645,72 @@ function buyFood(playerId, vendorKey, foodKey, amount, playerCoords)
     end
 end
 
+-- ============================================================
+-- BUY FUEL (Lesson 27) — the pumps at Glizzys Depot.
+-- Lesson 7's price (2 gold/unit) and its tank cap (100).
+-- Fuel is the first ware that ISN'T stored: it goes
+-- straight into the buyer's vehicle tank, so there is
+-- no ownedFuel — VendorStock is the only shelf it
+-- leaves. The tank reading arrives as a CLAIM from the
+-- client (the server has no eyes on the tank): it is
+-- bounded hard — a number, 0..100, and the purchase
+-- can't exceed the room it implies. A lying client can
+-- at worst overfill a tank it PAID to fill; the shelf
+-- and the gold are always exact.
+-- ============================================================
+FUEL_PRICE = 2        -- gold per unit (Lesson 7)
+FUEL_TANK_MAX = 100   -- tank capacity (Lesson 7)
+
+function buyFuel(playerId, vendorKey, amount, playerCoords, tankLevel)
+    local vendor = CustomVendors[vendorKey]
+    amount = math.floor(tonumber(amount) or 0)
+    tankLevel = math.floor(tonumber(tankLevel) or -1)
+
+    if vendor == nil then
+        return false, "No such vendor: " .. tostring(vendorKey)
+    elseif not vendorSellsCategory(vendor, "fuel") then
+        return false, vendor.label .. " doesn't sell fuel."
+    elseif amount < 1 then
+        return false, "Amount must be 1 or more."
+    elseif tankLevel < 0 or tankLevel > FUEL_TANK_MAX then
+        return false, "That tank reading makes no sense."
+    end
+
+    local inRange, rangeMsg = rangeCheck(vendorKey, vendor, playerCoords)
+    if not inRange then
+        return false, rangeMsg
+    end
+
+    local room = FUEL_TANK_MAX - tankLevel
+    if room <= 0 then
+        return false, "Your tank is already full."
+    elseif amount > room then
+        return false, "Your tank only takes " .. room .. " more fuel."
+    end
+
+    local shelf = VendorStock[vendorKey]
+    local inStock = 0
+    if shelf ~= nil and shelf.fuel ~= nil then
+        inStock = shelf.fuel
+    end
+    local cost = FUEL_PRICE * amount
+
+    if inStock < amount then
+        return false, vendor.label .. " has " .. inStock ..
+               " fuel left - not enough."
+    elseif playerGold(playerId) < cost then
+        return false, "Not enough gold: " .. amount ..
+               " fuel costs " .. cost .. "."
+    else
+        Fw.RemoveMoney(playerId, cost)
+        shelf.fuel = inStock - amount
+        saveData()  -- money moved: save NOW, not later
+        return true, "Pumped " .. amount .. " fuel for " ..
+               cost .. " gold at " .. vendor.label ..
+               ". Gold: " .. playerGold(playerId)
+    end
+end
+
 -- A wallet readout as one line, built here so the client
 -- stays dumb: it just prints what the server sends.
 function walletSummary(playerId)
@@ -766,6 +840,15 @@ function menuFor(playerId, vendorKey)
         end
     end
 
+    if vendorSellsCategory(vendor, "fuel") then
+        items[#items + 1] = {
+            kind = "fuel", key = "fuel", label = "Fuel",
+            detail = FUEL_PRICE .. " gold / unit - pumped into your vehicle",
+            price = FUEL_PRICE,
+            stock = shelf.fuel or 0,
+        }
+    end
+
     if #items == 0 then
         return nil
     end
@@ -817,6 +900,20 @@ AddEventHandler('shops:buyItem', function(vendorKey, kind, key, amount)
     local menu = menuFor(playerId, vendorKey)
     if menu ~= nil then
         TriggerClientEvent('shops:menu', playerId, menu)
+    end
+end)
+
+RegisterNetEvent('shops:buyFuel')
+AddEventHandler('shops:buyFuel', function(amount, tankLevel)
+    local playerId = source
+    local coords = GetEntityCoords(GetPlayerPed(playerId))
+    -- The pumps are Glizzys Depot's.
+    local ok, message = buyFuel(playerId, "glizzysDepot",
+                                amount, coords, tankLevel)
+    TriggerClientEvent('shops:result', playerId, message)
+    if ok then
+        -- Approved: NOW the client may pour it in.
+        TriggerClientEvent('shops:fuelUp', playerId, amount)
     end
 end)
 
