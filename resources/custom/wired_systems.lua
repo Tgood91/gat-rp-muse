@@ -31,7 +31,7 @@
 -- This file stands alone: it carries Lesson 13's seed
 -- content in compact form, plus two vendors the wiring
 -- needed — Bushido Supply (gear: no Lesson 13 vendor sold
--- armour or firearms) and Tanaz0lam Ammo, which carries
+-- armour or firearms) and Tanaz Ammo, which carries
 -- ALL ammo: its sells list holds the category "ammo",
 -- and the AmmoCatalog below merges base + custom types.
 -- Starting gold: 6000. The garage starts with the Sedan.
@@ -52,15 +52,15 @@ CustomVendors = {
         sells = { "fuel", "glizzyDog", "water" },
     },
     tummyExpress = {
-        label = "Tanazolam-tummy Express", place = "tummy2",
+        label = "Tanaz-tummy Express", place = "tummy2",
         sells = { "beans", "energyDrink" },
     },
     bushidoSupply = {
         label = "Bushido Supply", place = "gunStore",
         sells = { "armour", "firearms", "ammo" },
     },
-    tanaz0lamAmmo = {
-        label = "Tanaz0lam Ammo", place = "gunStore",
+    tanazAmmo = {
+        label = "Tanaz Ammo", place = "gunStore",
         sells = { "ammo" },  -- the category: EVERY ammo type
     },
 }
@@ -72,14 +72,14 @@ CustomVehicles = {
         special = "The ZipZap's big sibling: silent and faster",
     },
     tummyTruck = {
-        label = "Tanazolam Tummy Truck", price = 1600,
+        label = "Tanaz Tummy Truck", price = 1600,
         topSpeed = 95, tank = 90, health = 120,
         special = "Food runs pay +25 gold",
     },
 }
 
 CustomArmour = {
-    kevlarVest = { label = "Kevlar Vest", price = 350, protection = 50 },
+    kevlarVest = { label = "Ballistic Vest", price = 350, protection = 50 },
     ceramicCarrier = { label = "Ceramic Plate Carrier", price = 650, protection = 80 },
 }
 
@@ -102,7 +102,7 @@ CustomFirearms = {
 -- ALL ammo in one catalog: the two base types from
 -- Lesson 1 (with their prices) plus the custom types,
 -- referenced straight from CustomAmmo. "All ammo" is a
--- data merge — Tanaz0lam Ammo needs no special case.
+-- data merge — Tanaz Ammo needs no special case.
 AmmoCatalog = {
     ammo = { label = "AR Rounds", pricePerRound = 2 },
     pistolAmmo = { label = "Pistol Rounds", pricePerRound = 1 },
@@ -119,7 +119,7 @@ Registries = {
 
 -- Shelf CAPACITY per vendor per item: the most a shelf
 -- holds. The 80% rule stocks toward these numbers.
-VendorOrder = { "glizzysDepot", "tummyExpress", "bushidoSupply", "tanaz0lamAmmo" }
+VendorOrder = { "glizzysDepot", "tummyExpress", "bushidoSupply", "tanazAmmo" }
 VendorCapacity = {
     glizzysDepot = { fuel = 200, glizzyDog = 20, water = 50 },
     tummyExpress = { beans = 40, energyDrink = 30 },
@@ -128,7 +128,7 @@ VendorCapacity = {
         bushidoCarbine = 2, harborShotgun = 2,
         rounds556 = 200, shells12 = 100,
     },
-    tanaz0lamAmmo = {
+    tanazAmmo = {
         ammo = 1000, pistolAmmo = 500,
         rounds556 = 250, shells12 = 100,
     },
@@ -288,7 +288,7 @@ end
 -- ============================================================
 function showWiredSummary()
     print("Gold: " .. gold .. " | Garage: " .. #Garage .. " cars")
-    print("Owned: " .. (Owned.kevlarVest or 0) .. " Kevlar Vest, " ..
+    print("Owned: " .. (Owned.kevlarVest or 0) .. " Ballistic Vest, " ..
           (Owned.bushidoCarbine or 0) .. " Bushido Carbine, " ..
           (Owned.rounds556 or 0) .. " x 5.56 Rounds")
     print("Bushido Supply shelf: " ..
@@ -298,11 +298,11 @@ function showWiredSummary()
     print("Owned ammo: " .. (Owned.ammo or 0) .. " AR, " ..
           (Owned.pistolAmmo or 0) .. " pistol, " ..
           (Owned.shells12 or 0) .. " shells")
-    print("Tanaz0lam Ammo shelf: " ..
-          VendorStock.tanaz0lamAmmo.ammo .. " AR, " ..
-          VendorStock.tanaz0lamAmmo.pistolAmmo .. " pistol, " ..
-          VendorStock.tanaz0lamAmmo.rounds556 .. " x 5.56, " ..
-          VendorStock.tanaz0lamAmmo.shells12 .. " shells")
+    print("Tanaz Ammo shelf: " ..
+          VendorStock.tanazAmmo.ammo .. " AR, " ..
+          VendorStock.tanazAmmo.pistolAmmo .. " pistol, " ..
+          VendorStock.tanazAmmo.rounds556 .. " x 5.56, " ..
+          VendorStock.tanazAmmo.shells12 .. " shells")
 end
 
 -- ============================================================
@@ -319,7 +319,7 @@ buyFromVendor("tummyExpress", "ammo", "rounds556", 10)        -- refused: food v
 importCustomVehicle("zipzapGT")   -- 3200 + 480 fee = 3680 -> gold 980
 importCustomVehicle("tummyTruck") -- refused: 1840 total, you have 980
 importCustomVehicle("zipzapGT")   -- refused: already in the garage
-stockCustomAmmo("tanaz0lamAmmo", "pistolAmmo", 50)  -- base ammo too: 400 -> 450
-buyFromVendor("tanaz0lamAmmo", "ammo", "pistolAmmo", 20)  -- 20 -> gold 960
-buyFromVendor("tanaz0lamAmmo", "ammo", "shells12", 10)    -- 50 -> gold 910
+stockCustomAmmo("tanazAmmo", "pistolAmmo", 50)  -- base ammo too: 400 -> 450
+buyFromVendor("tanazAmmo", "ammo", "pistolAmmo", 20)  -- 20 -> gold 960
+buyFromVendor("tanazAmmo", "ammo", "shells12", 10)    -- 50 -> gold 910
 showWiredSummary()                -- the end state, all wired together
