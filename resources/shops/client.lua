@@ -139,8 +139,14 @@ end)
 -- was clicked; the client forwards it untouched — the
 -- server will re-check every bit of it anyway.
 RegisterNUICallback('buy', function(data, cb)
-    TriggerServerEvent('shops:buyItem', data.vendorKey,
-                       data.kind, data.key, data.amount)
+    if data.kind == 'fuel' then
+        -- Fuel isn't bagged, it's pumped: the fuel flow
+        -- (Lesson 27, below) reads the tank first.
+        askFuel(tonumber(data.amount) or 1)
+    else
+        TriggerServerEvent('shops:buyItem', data.vendorKey,
+                           data.kind, data.key, data.amount)
+    end
     cb('ok')
 end)
 
@@ -218,6 +224,50 @@ CreateThread(function()
 end)
 
 -- ============================================================
+-- LESSON 27: FUEL — ask, approval, THEN pour.
+-- The tank lives here (only the client can read a
+-- vehicle's fuel), so the ask carries the reading. The
+-- server bounds it, checks the shelf and the gold, and
+-- only on approval sends 'shops:fuelUp' — and only
+-- THEN does this side pour. A modded client can lie
+-- about its tank, but it can't pour unpaid fuel: the
+-- pouring is gated on the server's yes.
+-- ============================================================
+function askFuel(amount)
+    local ped = PlayerPedId()
+    local veh = GetVehiclePedIsIn(ped, false)
+    if veh == 0 then
+        say("You need to be in a vehicle at the pumps.")
+        return
+    end
+    local tank = math.floor(GetVehicleFuelLevel(veh))
+    TriggerServerEvent('shops:buyFuel', amount, tank)
+end
+
+-- /buyfuel 30 — pump 30 units at Glizzys Depot.
+RegisterCommand('buyfuel', function(source, args, raw)
+    local amount = tonumber(args[1])
+    if amount == nil then
+        say("Usage: /buyfuel <amount>  e.g. /buyfuel 30")
+    else
+        askFuel(amount)
+    end
+end, false)
+
+RegisterNetEvent('shops:fuelUp')
+AddEventHandler('shops:fuelUp', function(amount)
+    local ped = PlayerPedId()
+    local veh = GetVehiclePedIsIn(ped, false)
+    if veh == 0 then
+        say("Paid for fuel but you're out of the vehicle - it's gone.")
+        return
+    end
+    -- Re-read OUR tank and add what was bought, capped.
+    local now = GetVehicleFuelLevel(veh)
+    SetVehicleFuelLevel(veh, math.min(100.0, now + amount))
+end)
+
+-- ============================================================
 -- LESSON 26: NEEDS — the client wears the body.
 -- The server owns hunger/thirst and DECIDES any health
 -- tax; this side APPLIES it, because your ped's health
@@ -287,6 +337,9 @@ end)
 --   Glizzys + Tummy Express sell FOOD (Lesson 24):
 --   dogs + water at Glizzys, beans + energy drinks at
 --   Tummy Express — in the menu, or /buyfood glizzyDog 2.
+--   FUEL (Lesson 27): drive INTO Glizzys Depot in a
+--   car and /buyfuel 30 (or use the menu's Fuel row) —
+--   the sale approves, then the tank actually fills.
 --   NEEDS (Lesson 26): /needs shows hunger + thirst;
 --   they drain every city hour and a HUD line appears.
 --   /eat glizzyDog / /drink water spend your pack —
