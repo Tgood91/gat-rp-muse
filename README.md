@@ -14,6 +14,7 @@ resources/
   repairs/     the mechanic shop + car health (Lesson 6)
   maps/        locations, coordinates, travel (Lesson 7)
   needs/       health, hunger + thirst (Lesson 8)
+  custom/      custom content registries (Lesson 13)
 ```
 
 Coming later: maps. Rule of the repo: a folder is only created when its
@@ -46,6 +47,8 @@ lesson has real code — no empty lessons.
   - `imports.lua` — an import catalog table (Taxi Cab, Delivery Van, Armored SUV, ZipZap) where each car is data: price, top speed, tank, health, a special trait, and a job bonus. `importCar()` charges price + 15% import fee (integer division `//` keeps gold whole), the garage is a numbered LIST table searched with a numeric `for` loop, and `setCar()` swaps your current car.
 - **Lesson 12 — Wired jobs** (`resources/jobs/`)
   - `shifts.lua` — jobs become a table too (pay, key requirement, specialized car, bonus), and `workShift()` reads `currentCarKey`: the Lesson 11 bonuses go live as pairings (Taxi Cab +20 on taxi only, Delivery Van +30 on delivery only), with `job.bonus or 0` defaulting unpaired jobs to no bonus.
+- **Lesson 13 — Custom content** (`resources/custom/`)
+  - `custom_content.lua` — one registry table per category (vendors, vehicles, armour, ammo, firearms) and one gatekeeper add function per category: label + required field + unused key, or the entry is refused. Firearms are cross-checked against real ammo types (base or custom) before they can register; labeled registries are counted with a `pairs` loop.
 
 ## Notes
 
