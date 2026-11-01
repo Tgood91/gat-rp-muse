@@ -51,6 +51,8 @@ lesson has real code — no empty lessons.
   - `custom_content.lua` — one registry table per category (vendors, vehicles, armour, ammo, firearms) and one gatekeeper add function per category: label + required field + unused key, or the entry is refused. Firearms are cross-checked against real ammo types (base or custom) before they can register; labeled registries are counted with a `pairs` loop. Includes Tanaz0lam Ammo, whose sells list is the whole `ammo` category — ALL ammo.
 - **Lesson 14 — Wired custom content** (`resources/custom/`)
   - `wired_systems.lua` — the older systems read the registries: a category map (`Registries`) lets one `buyFromVendor()` sell armour, firearms, and ammo; `VendorStock` tracks what each vendor actually has (separate from what it *can* sell); `stockCustomAmmo()` restocks vendor shelves; and Lesson 11's importer reads `CustomVehicles` via `importCustomVehicle()`. Adds Bushido Supply (a gear vendor at the gun store) and Tanaz0lam Ammo (all ammo: base types merged with the custom ones in one `AmmoCatalog`), plus `restockAllVendors(80)` — every vendor's shelves topped UP TO 80% of capacity (fills only, never drains).
+- **Lesson 15 — Restock timer** (`resources/custom/`)
+  - `restock_timer.lua` — the 80% rule on a clock: a tick loop (`runCity`) where each pass is one game hour, a `Demand` rate table drains every shelf (the city buys too; `math.min` keeps a shelf from selling below zero), and a counter fires `restockAllVendors(80)` by itself every 4 hours — no human call. Shelves saw-tooth: drain, drain, drain, snap back to 80%.
 
 ## Notes
 
