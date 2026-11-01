@@ -48,9 +48,9 @@ lesson has real code — no empty lessons.
 - **Lesson 12 — Wired jobs** (`resources/jobs/`)
   - `shifts.lua` — jobs become a table too (pay, key requirement, specialized car, bonus), and `workShift()` reads `currentCarKey`: the Lesson 11 bonuses go live as pairings (Taxi Cab +20 on taxi only, Delivery Van +30 on delivery only), with `job.bonus or 0` defaulting unpaired jobs to no bonus.
 - **Lesson 13 — Custom content** (`resources/custom/`)
-  - `custom_content.lua` — one registry table per category (vendors, vehicles, armour, ammo, firearms) and one gatekeeper add function per category: label + required field + unused key, or the entry is refused. Firearms are cross-checked against real ammo types (base or custom) before they can register; labeled registries are counted with a `pairs` loop.
+  - `custom_content.lua` — one registry table per category (vendors, vehicles, armour, ammo, firearms) and one gatekeeper add function per category: label + required field + unused key, or the entry is refused. Firearms are cross-checked against real ammo types (base or custom) before they can register; labeled registries are counted with a `pairs` loop. Includes Tanaz0lam Ammo, whose sells list is the whole `ammo` category — ALL ammo.
 - **Lesson 14 — Wired custom content** (`resources/custom/`)
-  - `wired_systems.lua` — the older systems read the registries: a category map (`Registries`) lets one `buyFromVendor()` sell armour, firearms, and ammo; `VendorStock` tracks what each vendor actually has (separate from what it *can* sell); `stockCustomAmmo()` restocks vendor shelves; and Lesson 11's importer reads `CustomVehicles` via `importCustomVehicle()`. Adds Bushido Supply, a gear vendor at the gun store.
+  - `wired_systems.lua` — the older systems read the registries: a category map (`Registries`) lets one `buyFromVendor()` sell armour, firearms, and ammo; `VendorStock` tracks what each vendor actually has (separate from what it *can* sell); `stockCustomAmmo()` restocks vendor shelves; and Lesson 11's importer reads `CustomVehicles` via `importCustomVehicle()`. Adds Bushido Supply (a gear vendor at the gun store) and Tanaz0lam Ammo (all ammo: base types merged with the custom ones in one `AmmoCatalog`), plus `restockAllVendors(80)` — every vendor's shelves topped UP TO 80% of capacity (fills only, never drains).
 
 ## Notes
 
