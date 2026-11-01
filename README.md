@@ -13,6 +13,7 @@ resources/
   vendors/     vendors + buying ammo (Lesson 5)
   repairs/     the mechanic shop + car health (Lesson 6)
   maps/        locations, coordinates, travel (Lesson 7)
+  needs/       health, hunger + thirst (Lesson 8)
 ```
 
 Coming later: maps. Rule of the repo: a folder is only created when its
@@ -34,7 +35,9 @@ lesson has real code — no empty lessons.
 - **Lesson 6 — Vehicle repairs** (`resources/repairs/`)
   - `repairs.lua` — the car gets a `carHealth` slot (0–100). The mechanic shop is the second vendor: `buyPart()` sells repair kits (200) and fuel cans (25), `useRepairKit()` spends a kit to heal the car +30, capped at 100. Buy → hold → use, across three systems.
 - **Lesson 7 — Maps** (`resources/maps/`)
-  - `maps.lua` — places as name + (x, y) coordinates. `travelTo()` computes distance with `math.sqrt`, charges 1 fuel per unit, and moves you; vendors only open when you're standing at their location, so the map locks Lessons 5–6 together.
+  - `maps.lua` — places as name + (x, y) coordinates. `travelTo()` computes distance with `math.sqrt`, charges 1 fuel per unit, and moves you; vendors only open when you're standing at their location, so the map locks Lessons 5–6 together. Includes Glizzys Gas, a fuel vendor at (6, 0) selling fuel at 2 gold/unit with a tank-cap check.
+- **Lesson 8 — Needs** (`resources/needs/`)
+  - `needs.lua` — player vitals: health, hunger, thirst. `eat()`/`drink()` spend pack items to refill a stat (capped at 100), `play(hours)` drains hunger −10/hr and thirst −15/hr (floored at 0), and an empty stat taxes health −5. Uses Lesson 1's health 85 and food counts.
 
 ## Notes
 
