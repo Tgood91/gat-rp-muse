@@ -34,6 +34,13 @@
 -- tiers (low / medium / max) — armour-only, as decided
 -- in the name cleanup. Same recipe as buyAmmo; the
 -- range check is now shared by both counters.
+--
+-- LESSON 20 ADDITION: a real MENU (NUI). The server
+-- builds each shop's menu (items, prices, live stock,
+-- the asker's gold) and the client's web page just draws
+-- it. Menu buys arrive as 'shops:buyItem' and land in
+-- the SAME buyAmmo/buyArmour checks — new front door,
+-- same counters. See menuFor below.
 -- ============================================================
 
 -- ---------- The shops (Lesson 14) ----------
@@ -446,6 +453,101 @@ AddEventHandler('shops:buyArmour', function(armourKey, amount)
     local ok, message = buyArmour(playerId, "bushidoSupply",
                                   armourKey, amount, coords)
     TriggerClientEvent('shops:result', playerId, message)
+end)
+
+-- ============================================================
+-- THE MENU (Lesson 20) — the server builds it, the page
+-- just draws it. A menu is a snapshot: this vendor's
+-- buyable items, their prices, the LIVE shelf counts,
+-- and the asking player's gold. A vendor whose wares
+-- have no counter yet (the food shops) returns nil —
+-- the client tells the player instead of opening an
+-- empty window.
+-- ============================================================
+function menuFor(playerId, vendorKey)
+    local vendor = CustomVendors[vendorKey]
+    if vendor == nil then
+        return nil
+    end
+    local wallet = getWallet(playerId)
+    local shelf = VendorStock[vendorKey] or {}
+    local items = {}
+
+    if vendorSellsCategory(vendor, "ammo") then
+        for i = 1, #AMMO_ORDER do
+            local key = AMMO_ORDER[i]
+            local item = AmmoCatalog[key]
+            items[#items + 1] = {
+                kind = "ammo", key = key, label = item.label,
+                detail = item.pricePerRound .. " gold / round",
+                price = item.pricePerRound,
+                stock = shelf[key] or 0,
+            }
+        end
+    end
+    if vendorSellsCategory(vendor, "armour") then
+        for i = 1, #ARMOUR_ORDER do
+            local key = ARMOUR_ORDER[i]
+            local item = ArmourCatalog[key]
+            items[#items + 1] = {
+                kind = "armour", key = key, label = item.label,
+                detail = item.protection .. " protection",
+                price = item.price,
+                stock = shelf[key] or 0,
+            }
+        end
+    end
+
+    if #items == 0 then
+        return nil
+    end
+    return {
+        vendorKey = vendorKey, vendor = vendor.label,
+        gold = wallet.gold, items = items,
+    }
+end
+
+RegisterNetEvent('shops:getMenu')
+AddEventHandler('shops:getMenu', function(vendorKey)
+    local playerId = source
+    local menu = menuFor(playerId, vendorKey)
+    if menu == nil then
+        local vendor = CustomVendors[vendorKey]
+        local label = "That shop"
+        if vendor ~= nil then
+            label = vendor.label
+        end
+        TriggerClientEvent('shops:result', playerId, label ..
+            " has no counter yet - coming in a later lesson.")
+    else
+        TriggerClientEvent('shops:menu', playerId, menu)
+    end
+end)
+
+-- A menu click. The page names a vendor — but the
+-- server trusts NOTHING about that: buyAmmo/buyArmour
+-- re-check the vendor, its sells list, the range (from
+-- the player's real position), the shelf, and the gold.
+-- A forged menu request fails exactly like a forged
+-- chat command. After the buy, a FRESH menu goes back
+-- so the open window shows the new gold + stock.
+RegisterNetEvent('shops:buyItem')
+AddEventHandler('shops:buyItem', function(vendorKey, kind, key, amount)
+    local playerId = source
+    local coords = GetEntityCoords(GetPlayerPed(playerId))
+    local ok, message
+    if kind == "ammo" then
+        ok, message = buyAmmo(playerId, vendorKey, key, amount, coords)
+    elseif kind == "armour" then
+        ok, message = buyArmour(playerId, vendorKey, key, amount, coords)
+    else
+        ok, message = false, "Unknown item kind: " .. tostring(kind)
+    end
+    TriggerClientEvent('shops:result', playerId, message)
+    local menu = menuFor(playerId, vendorKey)
+    if menu ~= nil then
+        TriggerClientEvent('shops:menu', playerId, menu)
+    end
 end)
 
 RegisterNetEvent('shops:getWallet')

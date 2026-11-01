@@ -12,8 +12,16 @@ game 'gta5'
 lua54 'yes'
 
 author 'Tanner'
-description 'Lessons 16-19: vendor shops as a FiveM resource — server-owned stock and wallets, Tanaz Ammo buys by command, 80% restock on a timer, real shop locations you must stand at, wallets + stock saved across restarts, Bushido Supply armour counter (low/medium/max).'
-version '1.3.0'
+description 'Lessons 16-20: vendor shops as a FiveM resource — server-owned stock and wallets, Tanaz Ammo buys by command, 80% restock on a timer, real shop locations you must stand at, wallets + stock saved across restarts, Bushido Supply armour counter (low/medium/max), NUI shop menu (press E at a shop).'
+version '1.4.0'
+
+-- Lesson 20: the shop window. ui_page names the ONE
+-- page FiveM shows; files lists what the game may load.
+ui_page 'html/index.html'
+
+files {
+    'html/index.html',
+}
 
 -- Shared scripts load on BOTH sides: public data only
 -- (Lesson 17's config.lua — shop locations live there).
