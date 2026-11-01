@@ -86,8 +86,12 @@ after editing a file — no full server restart needed).
    | Wallet | `/wallet` | gold + owned ammo counts |
    | Timer | wait ~4 minutes, watch the server console | auto-restock fires on its own |
 
-Every new player starts with a 6000-gold wallet (in memory only —
-it resets when the server restarts; saving wallets is a later lesson).
+Every new player starts with a 6000-gold wallet. Since Lesson 18,
+wallets and stock are saved to `data.json` inside the `shops`
+resource folder and reload at boot — restarts no longer wipe the
+world. (First ever boot prints `[shops] no save file yet - fresh
+start.`; later boots print `[shops] save loaded: ...`. Deleting
+`data.json` resets the world to day one.)
 
 ## 5. Make it yours (the knobs)
 
@@ -124,8 +128,9 @@ After editing a file: `restart shops` in the server console.
 
 ## Scope & safety notes
 
-- This is a **local test server** setup. Wallets and stock live in
-  server memory and reset on restart; there is no database yet.
+- This is a **local test server** setup. Wallets and stock persist
+  in a plain `data.json` file (Lesson 18); there is no database
+  yet, and a hard crash can lose the last few minutes of changes.
 - Don't port-forward or advertise the server publicly at this stage:
   no framework (ESX/QBCore), no persistence, no admin hardening yet.
   Those are the next lessons, in that order.

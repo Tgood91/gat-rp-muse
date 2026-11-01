@@ -57,6 +57,8 @@ lesson has real code — no empty lessons.
   - `fxmanifest.lua`, `server.lua`, `client.lua` — the vendor system as a real FiveM resource: the server owns vendors, stock, per-player wallets, and the restock timer (a `CreateThread` loop; 1 city hour = 60s so you can watch it); the client only asks. `/buyammo pistolAmmo 20` sends an event, the server re-checks everything (a modded client can't be trusted) and replies with the result; `/wallet` reports gold + owned ammo; `restocknow` in the server console forces the 80% restock.
 - **Lesson 17 — You have to be there** (`resources/shops/`)
   - Adds `config.lua` (a shared script: loads on server AND clients — public data only) holding each vendor's real Los Santos location (Ammu-Nations, a gas station, a 24/7) and a 5m buy range. The server now reads the buyer's position from their ped and refuses buys from out of range — coords never come from the client. Client gains one map blip per vendor, `/whereami` (nearest shop + distance), and `/coords` (a dev tool for placing shops: stand somewhere, capture the numbers, paste them into the config).
+- **Lesson 18 — It survives a restart** (`resources/shops/`)
+  - Persistence: wallets + stock are JSON-encoded into `data.json` in the resource folder (`SaveResourceFile`) and loaded at boot, before the 80% top-up. Wallets are re-keyed from `source` (a per-session seat number) to the player's license identifier, so the same player finds their wallet after reconnecting. Saves fire when money moves (a buy), when a player leaves, and at resource shutdown. JSON numbers come back as decimals, so every count is floored back to a whole number on load.
 
 ## Notes
 
