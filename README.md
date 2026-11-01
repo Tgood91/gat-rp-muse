@@ -59,6 +59,8 @@ lesson has real code — no empty lessons.
   - Adds `config.lua` (a shared script: loads on server AND clients — public data only) holding each vendor's real Los Santos location (Ammu-Nations, a gas station, a 24/7) and a 5m buy range. The server now reads the buyer's position from their ped and refuses buys from out of range — coords never come from the client. Client gains one map blip per vendor, `/whereami` (nearest shop + distance), and `/coords` (a dev tool for placing shops: stand somewhere, capture the numbers, paste them into the config).
 - **Lesson 18 — It survives a restart** (`resources/shops/`)
   - Persistence: wallets + stock are JSON-encoded into `data.json` in the resource folder (`SaveResourceFile`) and loaded at boot, before the 80% top-up. Wallets are re-keyed from `source` (a per-session seat number) to the player's license identifier, so the same player finds their wallet after reconnecting. Saves fire when money moves (a buy), when a player leaves, and at resource shutdown. JSON numbers come back as decimals, so every count is floored back to a whole number on load.
+- **Lesson 19 — Bushido Supply's counter** (`resources/shops/`)
+  - `buyArmour` + `/buyarmor <lowArmor|mediumArmor|maxArmor>`: Bushido Supply sells its three armour tiers (Low 200g/25 protection, Medium 450g/50, Max 800g/100) through the same check → move → report recipe — flat prices instead of per-round, purchases tracked in `ownedArmour`, saved like everything else. The Lesson 17 range check is extracted into a shared `rangeCheck()` both counters use, and Bushido's shelves are trimmed to armour only (no phantom firearm/ammo stock it no longer sells).
 
 ## Notes
 
