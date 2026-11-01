@@ -55,6 +55,8 @@ lesson has real code — no empty lessons.
   - `restock_timer.lua` — the 80% rule on a clock: a tick loop (`runCity`) where each pass is one game hour, a `Demand` rate table drains every shelf (the city buys too; `math.min` keeps a shelf from selling below zero), and a counter fires `restockAllVendors(80)` by itself every 4 hours — no human call. Shelves saw-tooth: drain, drain, drain, snap back to 80%.
 - **Lesson 16 — First FiveM resource** (`resources/shops/`)
   - `fxmanifest.lua`, `server.lua`, `client.lua` — the vendor system as a real FiveM resource: the server owns vendors, stock, per-player wallets, and the restock timer (a `CreateThread` loop; 1 city hour = 60s so you can watch it); the client only asks. `/buyammo pistolAmmo 20` sends an event, the server re-checks everything (a modded client can't be trusted) and replies with the result; `/wallet` reports gold + owned ammo; `restocknow` in the server console forces the 80% restock.
+- **Lesson 17 — You have to be there** (`resources/shops/`)
+  - Adds `config.lua` (a shared script: loads on server AND clients — public data only) holding each vendor's real Los Santos location (Ammu-Nations, a gas station, a 24/7) and a 5m buy range. The server now reads the buyer's position from their ped and refuses buys from out of range — coords never come from the client. Client gains one map blip per vendor, `/whereami` (nearest shop + distance), and `/coords` (a dev tool for placing shops: stand somewhere, capture the numbers, paste them into the config).
 
 ## Notes
 
