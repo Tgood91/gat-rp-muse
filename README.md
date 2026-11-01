@@ -10,6 +10,7 @@ resources/
   cars/        car system — key, fuel, engine, driving (Lesson 2)
   jobs/        jobs that pay gold (Lesson 3)
   weapons/     equip + shoot, per-weapon ammo (Lesson 4)
+  vendors/     vendors + buying ammo (Lesson 5)
 ```
 
 Coming later: maps. Rule of the repo: a folder is only created when its
@@ -26,6 +27,8 @@ lesson has real code — no empty lessons.
   - `jobs.lua` — earning instead of spending: three jobs (mechanic 80, taxi 40, delivery 100) picked with an `elseif` chain, `workShift()` pays gold into the same wallet the shop spends from. Taxi and delivery need the car key from Lesson 1.
 - **Lesson 4 — Weapons** (`resources/weapons/`)
   - `weapons.lua` — equip what you own (`equipWeapon`), `shoot()` spends from the equipped weapon's own ammo pool: pistol 1 round per shot, AR-15 a 3-round burst with a 3-round check.
+- **Lesson 5 — Vendors** (`resources/vendors/`)
+  - `vendors.lua` — a vendor is a place: you can only buy while you're there. `buyAmmo()` runs the full counter: cost = price × amount, checks vendor stock *and* your gold, then moves all three — gold down, your ammo up, shelf stock down. Buys at Lesson 1 prices (AR 2/round, pistol 1/round).
 
 ## Notes
 
