@@ -28,6 +28,12 @@
 -- at boot — and wallets are keyed by the player's license
 -- identifier, because `source` is a seat number that
 -- changes every session. Details at PERSISTENCE below.
+--
+-- LESSON 19 ADDITION: Bushido Supply gets its own proper
+-- counter. buyArmour + /buyarmor sell its three armour
+-- tiers (low / medium / max) — armour-only, as decided
+-- in the name cleanup. Same recipe as buyAmmo; the
+-- range check is now shared by both counters.
 -- ============================================================
 
 -- ---------- The shops (Lesson 14) ----------
@@ -60,15 +66,23 @@ AmmoCatalog = {
 }
 AMMO_ORDER = { "ammo", "pistolAmmo", "rounds556", "shells12" }
 
+-- Bushido Supply's armour ladder (Lesson 19): three
+-- tiers, priced by protection. Flat prices — a vest is
+-- bought whole, not by the round.
+ArmourCatalog = {
+    lowArmor = { label = "Low Armour Vest", price = 200, protection = 25 },
+    mediumArmor = { label = "Medium Armour Vest", price = 450, protection = 50 },
+    maxArmor = { label = "Max Armour Vest", price = 800, protection = 100 },
+}
+ARMOUR_ORDER = { "lowArmor", "mediumArmor", "maxArmor" }
+
 VendorOrder = { "glizzysDepot", "tummyExpress", "bushidoSupply", "tanazAmmo" }
 
 VendorCapacity = {
     glizzysDepot = { fuel = 200, glizzyDog = 20, water = 50 },
     tummyExpress = { beans = 40, energyDrink = 30 },
-    bushidoSupply = {
-        kevlarVest = 5, ceramicCarrier = 2,
-        bushidoCarbine = 2, harborShotgun = 2,
-        rounds556 = 200, shells12 = 100,
+    bushidoSupply = {  -- armour ONLY: no phantom gear/ammo shelves
+        lowArmor = 5, mediumArmor = 3, maxArmor = 2,
     },
     tanazAmmo = {
         ammo = 1000, pistolAmmo = 500,
@@ -82,11 +96,7 @@ VendorStock = {}  -- filled by the restock at boot, below
 Demand = {
     glizzysDepot = { fuel = 15, glizzyDog = 3, water = 5 },
     tummyExpress = { beans = 4, energyDrink = 3 },
-    bushidoSupply = {
-        kevlarVest = 1, ceramicCarrier = 0,
-        bushidoCarbine = 0, harborShotgun = 0,
-        rounds556 = 20, shells12 = 5,
-    },
+    bushidoSupply = { lowArmor = 1, mediumArmor = 0, maxArmor = 0 },
     tanazAmmo = {
         ammo = 60, pistolAmmo = 35,
         rounds556 = 15, shells12 = 6,
@@ -157,7 +167,10 @@ end
 function getWallet(playerId)
     local key = playerKey(playerId)
     if PlayerWallets[key] == nil then
-        PlayerWallets[key] = { gold = 6000, owned = {} }
+        PlayerWallets[key] = { gold = 6000, owned = {}, ownedArmour = {} }
+    end
+    if PlayerWallets[key].ownedArmour == nil then
+        PlayerWallets[key].ownedArmour = {}  -- pre-Lesson-19 save
     end
     return PlayerWallets[key]
 end
@@ -210,6 +223,9 @@ function loadData()
             for ammoKey, count in pairs(wallet.owned or {}) do
                 wallet.owned[ammoKey] = math.floor(count)
             end
+            for armourKey, count in pairs(wallet.ownedArmour or {}) do
+                wallet.ownedArmour[armourKey] = math.floor(count)
+            end
         end
     end
     if data.stock ~= nil then
@@ -232,6 +248,23 @@ function vendorSellsAmmo(vendor)
         end
     end
     return false
+end
+
+-- ============================================================
+-- RANGE CHECK — Lesson 17's "be there" rule, shared by
+-- every counter since Lesson 19. #(a - b) is the distance
+-- between two points: vector math does Lesson 7's sqrt
+-- for you. Returns true, or false + the refusal message.
+-- ============================================================
+function rangeCheck(vendorKey, vendor, playerCoords)
+    local spot = Config.Vendors[vendorKey]
+    if spot == nil then
+        return false, "No shop spot set for: " .. tostring(vendorKey)
+    elseif #(playerCoords - spot.coords) > Config.BuyRange then
+        return false, "You need to be at " .. vendor.label ..
+               " to buy from it."
+    end
+    return true, nil
 end
 
 -- ============================================================
@@ -261,15 +294,11 @@ function buyAmmo(playerId, vendorKey, ammoKey, amount, playerCoords)
         return false, "Amount must be 1 or more."
     end
 
-    -- The Lesson 17 check: standing at the shop?
-    -- #(a - b) is the distance between two points —
-    -- vector math does the Lesson 7 sqrt for you.
-    local spot = Config.Vendors[vendorKey]
-    if spot == nil then
-        return false, "No shop spot set for: " .. tostring(vendorKey)
-    elseif #(playerCoords - spot.coords) > Config.BuyRange then
-        return false, "You need to be at " .. vendor.label ..
-               " to buy from it."
+    -- The Lesson 17 check, shared since Lesson 19:
+    -- standing at the shop?
+    local inRange, rangeMsg = rangeCheck(vendorKey, vendor, playerCoords)
+    if not inRange then
+        return false, rangeMsg
     end
 
     local shelf = VendorStock[vendorKey]
@@ -296,6 +325,75 @@ function buyAmmo(playerId, vendorKey, ammoKey, amount, playerCoords)
     end
 end
 
+-- Does this vendor's sells list include a CATEGORY?
+-- (vendorSellsAmmo above is the ammo-only version of
+-- this question, kept from Lesson 16.)
+function vendorSellsCategory(vendor, category)
+    for i = 1, #vendor.sells do
+        if vendor.sells[i] == category then
+            return true
+        end
+    end
+    return false
+end
+
+-- ============================================================
+-- BUY ARMOUR (Lesson 19) — Bushido Supply's counter.
+-- Same recipe as buyAmmo, three differences: the catalog
+-- is ArmourCatalog, the price is FLAT (item.price, not
+-- per-round), and purchases land in ownedArmour.
+-- The vendor must sell the "armour" category — since
+-- the name cleanup, Bushido Supply is the ONLY armour
+-- seller, and Tanaz Ammo refuses armour the way Bushido
+-- refuses ammo. One counter, one job.
+-- ============================================================
+function buyArmour(playerId, vendorKey, armourKey, amount, playerCoords)
+    local wallet = getWallet(playerId)
+    local vendor = CustomVendors[vendorKey]
+    local item = ArmourCatalog[armourKey]
+    amount = math.floor(tonumber(amount) or 0)
+
+    if vendor == nil then
+        return false, "No such vendor: " .. tostring(vendorKey)
+    elseif item == nil then
+        return false, "No such armour: " .. tostring(armourKey)
+    elseif not vendorSellsCategory(vendor, "armour") then
+        return false, vendor.label .. " doesn't sell armour."
+    elseif amount < 1 then
+        return false, "Amount must be 1 or more."
+    end
+
+    local inRange, rangeMsg = rangeCheck(vendorKey, vendor, playerCoords)
+    if not inRange then
+        return false, rangeMsg
+    end
+
+    local shelf = VendorStock[vendorKey]
+    local inStock = 0
+    if shelf ~= nil and shelf[armourKey] ~= nil then
+        inStock = shelf[armourKey]
+    end
+    local cost = item.price * amount
+
+    if inStock < amount then
+        return false, vendor.label .. " has " .. inStock ..
+               " x " .. item.label .. " - not enough."
+    elseif wallet.gold < cost then
+        return false, "Not enough gold: " .. amount .. " x " ..
+               item.label .. " costs " .. cost .. "."
+    else
+        wallet.gold = wallet.gold - cost
+        shelf[armourKey] = inStock - amount
+        wallet.ownedArmour[armourKey] =
+            (wallet.ownedArmour[armourKey] or 0) + amount
+        saveData()  -- money moved: save NOW, not later
+        return true, "Bought " .. amount .. " x " .. item.label ..
+               " (" .. item.protection .. " protection) for " ..
+               cost .. " gold at " .. vendor.label ..
+               ". Gold: " .. wallet.gold
+    end
+end
+
 -- A wallet readout as one line, built here so the client
 -- stays dumb: it just prints what the server sends.
 function walletSummary(playerId)
@@ -306,8 +404,16 @@ function walletSummary(playerId)
         parts[#parts + 1] = (wallet.owned[key] or 0) .. " " ..
                             AmmoCatalog[key].label
     end
+    local armourParts = {}
+    for i = 1, #ARMOUR_ORDER do
+        local key = ARMOUR_ORDER[i]
+        armourParts[#armourParts + 1] =
+            (wallet.ownedArmour[key] or 0) .. " " ..
+            ArmourCatalog[key].label
+    end
     return "Gold: " .. wallet.gold .. " | Ammo: " ..
-           table.concat(parts, ", ")
+           table.concat(parts, ", ") .. " | Armour: " ..
+           table.concat(armourParts, ", ")
 end
 
 -- ============================================================
@@ -329,6 +435,16 @@ AddEventHandler('shops:buyAmmo', function(ammoKey, amount)
     -- This lesson's counter is Tanaz Ammo: ALL ammo.
     local ok, message = buyAmmo(playerId, "tanazAmmo",
                                 ammoKey, amount, coords)
+    TriggerClientEvent('shops:result', playerId, message)
+end)
+
+RegisterNetEvent('shops:buyArmour')
+AddEventHandler('shops:buyArmour', function(armourKey, amount)
+    local playerId = source
+    local coords = GetEntityCoords(GetPlayerPed(playerId))
+    -- This counter is Bushido Supply: armour only.
+    local ok, message = buyArmour(playerId, "bushidoSupply",
+                                  armourKey, amount, coords)
     TriggerClientEvent('shops:result', playerId, message)
 end)
 
