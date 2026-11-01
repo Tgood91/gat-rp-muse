@@ -156,6 +156,12 @@ addVendor("tummyExpress", {
     label = "Tanazolam-tummy Express", type = "food",
     place = "tummy2", sells = { "beans", "energyDrink" },
 })
+-- sells = { "ammo" } is a CATEGORY entry: every ammo type,
+-- base or custom — this vendor carries ALL ammo.
+addVendor("tanaz0lamAmmo", {
+    label = "Tanaz0lam Ammo", type = "all ammo",
+    place = "gunStore", sells = { "ammo" },
+})
 
 -- Custom vehicles
 addVehicle("zipzapGT", {
@@ -201,7 +207,7 @@ addFirearm("harborShotgun", {
 -- TRY IT — look content up, watch the gatekeeper refuse,
 -- then add one more vehicle live
 -- ============================================================
-showCustomSummary()       -- 2 vendors, 2 vehicles, 2 armour, 2 ammo, 2 firearms
+showCustomSummary()       -- 3 vendors, 2 vehicles, 2 armour, 2 ammo, 2 firearms
 showOne(CustomVehicles, "vehicle", "zipzapGT")
 showOne(CustomFirearms, "firearm", "bushidoCarbine")
 addVendor("glizzysDepot", {
