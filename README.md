@@ -38,6 +38,8 @@ lesson has real code — no empty lessons.
   - `maps.lua` — places as name + (x, y) coordinates. `travelTo()` computes distance with `math.sqrt`, charges 1 fuel per unit, and moves you; vendors only open when you're standing at their location, so the map locks Lessons 5–6 together. Includes Glizzys Gas, a fuel vendor at (6, 0) selling fuel at 2 gold/unit with a tank-cap check.
 - **Lesson 8 — Needs** (`resources/needs/`)
   - `needs.lua` — player vitals: health, hunger, thirst. `eat()`/`drink()` spend pack items to refill a stat (capped at 100), `play(hours)` drains hunger −10/hr and thirst −15/hr (floored at 0), and an empty stat taxes health −5. Uses Lesson 1's health 85 and food counts.
+- **Lesson 9 — Tables + vendor chains** (`resources/maps/`)
+  - `chains.lua` — the map becomes one `locations` table (16 places), and lookup replaces the elseif chain (`nil` = no such place). Adds Tanner's two chains: **Glizzys-2-Go** ×8 (dogs + water, no pumps) and **Tanazolam-tummy** ×4 (beans + energy drinks), each with a vendor tag, a menu, and a shared chain stock pool. Distances rounded to 1 decimal.
 
 ## Notes
 
