@@ -23,11 +23,17 @@
 --   4. Prices come from the content itself: gear uses
 --      data.price, ammo uses data.pricePerRound. The buy
 --      function reads whichever slot exists.
+--   5. A stocking rule (Tanner's): every vendor has shelf
+--      CAPACITIES, and restockAllVendors(80) tops every
+--      shelf UP TO 80% of capacity. Fills only — a shelf
+--      above 80% is left alone, never drained down.
 --
 -- This file stands alone: it carries Lesson 13's seed
--- content in compact form, plus ONE new vendor —
--- Bushido Supply, a gear vendor at the gun store —
--- because no Lesson 13 vendor sold armour or firearms.
+-- content in compact form, plus two vendors the wiring
+-- needed — Bushido Supply (gear: no Lesson 13 vendor sold
+-- armour or firearms) and Tanaz0lam Ammo, which carries
+-- ALL ammo: its sells list holds the category "ammo",
+-- and the AmmoCatalog below merges base + custom types.
 -- Starting gold: 6000. The garage starts with the Sedan.
 -- ============================================================
 
@@ -52,6 +58,10 @@ CustomVendors = {
     bushidoSupply = {
         label = "Bushido Supply", place = "gunStore",
         sells = { "armour", "firearms", "ammo" },
+    },
+    tanaz0lamAmmo = {
+        label = "Tanaz0lam Ammo", place = "gunStore",
+        sells = { "ammo" },  -- the category: EVERY ammo type
     },
 }
 
@@ -89,22 +99,44 @@ CustomFirearms = {
     },
 }
 
+-- ALL ammo in one catalog: the two base types from
+-- Lesson 1 (with their prices) plus the custom types,
+-- referenced straight from CustomAmmo. "All ammo" is a
+-- data merge — Tanaz0lam Ammo needs no special case.
+AmmoCatalog = {
+    ammo = { label = "AR Rounds", pricePerRound = 2 },
+    pistolAmmo = { label = "Pistol Rounds", pricePerRound = 1 },
+    rounds556 = CustomAmmo.rounds556,
+    shells12 = CustomAmmo.shells12,
+}
+
 -- Category name -> registry. The buy function's phone book.
 Registries = {
     armour = CustomArmour,
     firearms = CustomFirearms,
-    ammo = CustomAmmo,
+    ammo = AmmoCatalog,
 }
 
--- What each vendor actually HAS on the shelf right now.
--- Only Bushido Supply stocks gear and ammo in this lesson.
-VendorStock = {
+-- Shelf CAPACITY per vendor per item: the most a shelf
+-- holds. The 80% rule stocks toward these numbers.
+VendorOrder = { "glizzysDepot", "tummyExpress", "bushidoSupply", "tanaz0lamAmmo" }
+VendorCapacity = {
+    glizzysDepot = { fuel = 200, glizzyDog = 20, water = 50 },
+    tummyExpress = { beans = 40, energyDrink = 30 },
     bushidoSupply = {
-        kevlarVest = 2, ceramicCarrier = 1,
-        bushidoCarbine = 1, harborShotgun = 1,
-        rounds556 = 120, shells12 = 40,
+        kevlarVest = 5, ceramicCarrier = 2,
+        bushidoCarbine = 2, harborShotgun = 2,
+        rounds556 = 200, shells12 = 100,
+    },
+    tanaz0lamAmmo = {
+        ammo = 1000, pistolAmmo = 500,
+        rounds556 = 250, shells12 = 100,
     },
 }
+
+-- What each vendor actually HAS right now. Shelves start
+-- empty — restockAllVendors(80) fills them in the demo.
+VendorStock = {}
 
 -- ============================================================
 -- VENDOR CHECKS — can this vendor sell that at all?
@@ -120,17 +152,43 @@ local function vendorSells(vendor, category, key)
 end
 
 -- ============================================================
+-- RESTOCK ALL — Tanner's standing rule: every vendor's
+-- shelves topped UP TO the given percent of capacity.
+-- target = capacity * percent // 100 (whole items only).
+-- A shelf already above target is left exactly as is.
+-- ============================================================
+function restockAllVendors(percent)
+    for i = 1, #VendorOrder do
+        local vendorKey = VendorOrder[i]
+        local vendor = CustomVendors[vendorKey]
+        local caps = VendorCapacity[vendorKey]
+        if VendorStock[vendorKey] == nil then
+            VendorStock[vendorKey] = {}
+        end
+        local shelf = VendorStock[vendorKey]
+        for itemKey, cap in pairs(caps) do
+            local target = cap * percent // 100
+            if (shelf[itemKey] or 0) < target then
+                shelf[itemKey] = target
+            end
+        end
+        print(vendor.label .. " stocked to " .. percent .. "%.")
+    end
+end
+
+-- ============================================================
 -- STOCK AMMO — the vendor side of the counter.
 -- Restocking is a system move: shelf count goes up,
 -- but only if the vendor sells that ammo at all.
+-- Looks in the ALL-ammo catalog: base types count too.
 -- ============================================================
 function stockCustomAmmo(vendorKey, ammoKey, amount)
     local vendor = CustomVendors[vendorKey]
-    local ammo = CustomAmmo[ammoKey]
+    local ammo = Registries.ammo[ammoKey]
     if vendor == nil then
         print("No such vendor: " .. vendorKey)
     elseif ammo == nil then
-        print("No such custom ammo: " .. ammoKey)
+        print("No such ammo: " .. ammoKey)
     elseif not vendorSells(vendor, "ammo", ammoKey) then
         print(vendor.label .. " doesn't stock " .. ammo.label .. ".")
     else
@@ -237,13 +295,22 @@ function showWiredSummary()
           VendorStock.bushidoSupply.kevlarVest .. " vests, " ..
           VendorStock.bushidoSupply.bushidoCarbine .. " carbines, " ..
           VendorStock.bushidoSupply.rounds556 .. " x 5.56")
+    print("Owned ammo: " .. (Owned.ammo or 0) .. " AR, " ..
+          (Owned.pistolAmmo or 0) .. " pistol, " ..
+          (Owned.shells12 or 0) .. " shells")
+    print("Tanaz0lam Ammo shelf: " ..
+          VendorStock.tanaz0lamAmmo.ammo .. " AR, " ..
+          VendorStock.tanaz0lamAmmo.pistolAmmo .. " pistol, " ..
+          VendorStock.tanaz0lamAmmo.rounds556 .. " x 5.56, " ..
+          VendorStock.tanaz0lamAmmo.shells12 .. " shells")
 end
 
 -- ============================================================
 -- TRY IT — restock, buy gear, hit the refusals, import
 -- ============================================================
+restockAllVendors(80)             -- the standing rule: all vendors to 80%
 stockCustomAmmo("glizzysDepot", "rounds556", 50)  -- refused: no ammo there
-stockCustomAmmo("bushidoSupply", "rounds556", 60) -- shelf 120 -> 180
+stockCustomAmmo("bushidoSupply", "rounds556", 60) -- shelf 160 -> 220
 buyFromVendor("bushidoSupply", "armour", "kevlarVest", 1)     -- 350 -> gold 5650
 buyFromVendor("bushidoSupply", "firearms", "bushidoCarbine", 1) -- 900 -> gold 4750
 buyFromVendor("bushidoSupply", "firearms", "bushidoCarbine", 1) -- refused: shelf empty
@@ -252,4 +319,7 @@ buyFromVendor("tummyExpress", "ammo", "rounds556", 10)        -- refused: food v
 importCustomVehicle("zipzapGT")   -- 3200 + 480 fee = 3680 -> gold 980
 importCustomVehicle("tummyTruck") -- refused: 1840 total, you have 980
 importCustomVehicle("zipzapGT")   -- refused: already in the garage
+stockCustomAmmo("tanaz0lamAmmo", "pistolAmmo", 50)  -- base ammo too: 400 -> 450
+buyFromVendor("tanaz0lamAmmo", "ammo", "pistolAmmo", 20)  -- 20 -> gold 960
+buyFromVendor("tanaz0lamAmmo", "ammo", "shells12", 10)    -- 50 -> gold 910
 showWiredSummary()                -- the end state, all wired together
