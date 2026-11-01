@@ -87,6 +87,7 @@ after editing a file — no full server restart needed).
    | Armour counter | drive to the **Bushido Supply** blip (Little Seoul Ammu-Nation), `/buyarmor lowArmor` | "Bought 1 x Low Armour Vest (25 protection) for 200 gold at Bushido Supply. Gold: 5780" |
    | **The menu** | stand at the Tanaz blip, press **E** (or `/shop`) | a shop window opens — prices, live stock, your gold. Buy 20 pistol rounds *in the window*: gold and stock update in the window itself. Esc closes it |
    | Food counters | drive to **Glizzys Depot**, press **E**, buy 2 Glizzy Dogs in the window (or `/buyfood glizzyDog 2`) | gold −100; `/wallet` shows them under Food. Tummy Express sells beans + energy drinks the same way |
+   | Needs | `/needs`, then wait a few city hours (minutes) | hunger/thirst drain in the HUD line; `/eat glizzyDog` spends a dog and hunger jumps back up. Leave a stat at 0 and your health starts paying 5 per city hour |
    | Timer | wait ~4 minutes, watch the server console | auto-restock fires on its own |
 
 Every new player starts with a 6000-gold wallet. Since Lesson 18,
