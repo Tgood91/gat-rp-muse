@@ -89,6 +89,7 @@ after editing a file — no full server restart needed).
    | Food counters | drive to **Glizzys Depot**, press **E**, buy 2 Glizzy Dogs in the window (or `/buyfood glizzyDog 2`) | gold −100; `/wallet` shows them under Food. Tummy Express sells beans + energy drinks the same way |
    | Needs | `/needs`, then wait a few city hours (minutes) | hunger/thirst drain in the HUD line; `/eat glizzyDog` spends a dog and hunger jumps back up. Leave a stat at 0 and your health starts paying 5 per city hour |
    | Fuel | spawn a car, drive it to **Glizzys Depot**, `/buyfuel 30` | "Pumped 30 fuel…" and the car's fuel gauge actually rises. Try 200: refused — the tank only takes what fits |
+   | Jobs | drive to the **LS Customs** blip, `/work mechanic`, wait a minute, `/collect` | +80 gold. Try `/collect` early: refused with the seconds left. Taxi (Downtown Cab Co., +40) and delivery (Post OP Depot, +100) work the same way at their blips |
    | Timer | wait ~4 minutes, watch the server console | auto-restock fires on its own |
 
 Every new player starts with a 6000-gold wallet. Since Lesson 18,
@@ -110,6 +111,8 @@ start.`; later boots print `[shops] save loaded: ...`. Deleting
 | City demand | `server.lua` → `Demand` | Units sold per city hour per item. |
 | Whose money runs the tills | `config.lua` → `Config.Framework` | `"standalone"` (default: our own wallets), `"esx"`, or `"qbcore"`. For esx/qbcore, ensure the framework resource **before** `shops` in server.cfg — it owns the cash, and our saves then store items only. Money only: items stay in our wallets in every mode. |
 | Starting gold | `server.lua` → `getWallet` | 6000. |
+| Job spots + pay | `config.lua` → `Config.Jobs` | Same trick as shop locations: `/coords`, paste, blips and range checks follow. Pay is per finished shift. |
+| Shift length | `server.lua` → `SHIFT_MS` | 60000 = a one-minute shift, short so you can watch it work. |
 
 After editing a file: `restart shops` in the server console.
 
