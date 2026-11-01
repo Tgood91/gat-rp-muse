@@ -8,8 +8,8 @@
 --      Same recipe as always: check -> move -> report.
 --   2. Choosing by name: currentJob holds a word ("mechanic"),
 --      and an if / elseif / else chain sets each job's pay.
---   3. Systems connect: the taxi job needs the car key from
---      the inventory — no key, no job.
+--   3. Systems connect: the taxi and delivery jobs need the car
+--      key from the inventory — no key, no job.
 --
 -- This file stands alone so you can run it by itself. It
 -- reuses two things from inventory.lua with the same starting
@@ -21,7 +21,7 @@ gold = 600
 carKey = 1          -- the key cut for YOUR car
 
 -- The job: one slot per fact, same as the car
-currentJob = "none" -- "none", "mechanic", or "taxi"
+currentJob = "none" -- "none", "mechanic", "taxi", or "delivery"
 jobPay = 0          -- gold per shift; set by getJob()
 shiftsWorked = 0
 
@@ -38,8 +38,16 @@ function getJob(jobName)
             print("Taxi drivers need their own car. No key, no job.")
         else
             currentJob = "taxi"
-            jobPay = 120
+            jobPay = 40
             print("You're hired: taxi driver, " .. jobPay .. " gold per shift.")
+        end
+    elseif jobName == "delivery" then
+        if carKey < 1 then
+            print("Delivery drivers need their own car. No key, no job.")
+        else
+            currentJob = "delivery"
+            jobPay = 100
+            print("You're hired: delivery driver, " .. jobPay .. " gold per shift.")
         end
     else
         print("No such job: " .. jobName)
@@ -81,12 +89,14 @@ end
 -- ============================================================
 -- TRY IT — get hired, work, quit, switch jobs
 -- ============================================================
-showJob()          -- none, gold 600
-getJob("taxi")     -- needs the car key (have it) -> hired, 120/shift
-workShift()        -- gold 720
-workShift()        -- gold 840
-quitJob()          -- unemployed
-workShift()        -- refused: no job
-getJob("mechanic") -- hired, 80/shift — no car needed
-workShift()        -- gold 920
-showJob()          -- the end state, all in one place
+showJob()            -- none, gold 600
+getJob("taxi")       -- needs the car key (have it) -> hired, 40/shift
+workShift()          -- gold 640
+workShift()          -- gold 680
+quitJob()            -- unemployed
+workShift()          -- refused: no job
+getJob("mechanic")   -- hired, 80/shift — no car needed
+workShift()          -- gold 760
+getJob("delivery")   -- switch jobs: 100/shift, needs the key too
+workShift()          -- gold 860
+showJob()            -- the end state, all in one place
