@@ -60,5 +60,6 @@ lesson has real code — no empty lessons.
 
 ## Notes
 
-- Plain Lua only — no game-engine calls yet. Engine/framework wiring comes later, once the target is picked.
+- Lessons 1–15 are plain Lua. Lessons 16–17 are a real FiveM resource (`resources/shops/`) — the only part of this repo that installs into a server. Framework (ESX/QBCore) wiring comes later.
+- **Running it in a FiveM server:** see [FIVEM_SERVER_SETUP.md](FIVEM_SERVER_SETUP.md) — FXServer install, where the resource goes, the `server.cfg` line, and the in-game test checklist.
 - Adding an inventory item = 4 touches: the slot, the buy price, the sell price, and one mention in `showInventory()`.
