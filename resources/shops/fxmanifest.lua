@@ -12,8 +12,8 @@ game 'gta5'
 lua54 'yes'
 
 author 'Tanner'
-description 'Lessons 16-17: vendor shops as a FiveM resource — server-owned stock and wallets, Tanaz Ammo buys by command, 80% restock on a timer, real shop locations you must stand at.'
-version '1.1.0'
+description 'Lessons 16-18: vendor shops as a FiveM resource — server-owned stock and wallets, Tanaz Ammo buys by command, 80% restock on a timer, real shop locations you must stand at, wallets + stock saved across restarts.'
+version '1.2.0'
 
 -- Shared scripts load on BOTH sides: public data only
 -- (Lesson 17's config.lua — shop locations live there).
