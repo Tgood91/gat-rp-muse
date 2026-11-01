@@ -27,12 +27,12 @@
 -- The shops (labels only — selling lives in Lesson 14).
 CustomVendors = {
     glizzysDepot = { label = "Glizzys Depot" },
-    tummyExpress = { label = "Tanazolam-tummy Express" },
+    tummyExpress = { label = "Tanaz-tummy Express" },
     bushidoSupply = { label = "Bushido Supply" },
-    tanaz0lamAmmo = { label = "Tanaz0lam Ammo" },
+    tanazAmmo = { label = "Tanaz Ammo" },
 }
 
-VendorOrder = { "glizzysDepot", "tummyExpress", "bushidoSupply", "tanaz0lamAmmo" }
+VendorOrder = { "glizzysDepot", "tummyExpress", "bushidoSupply", "tanazAmmo" }
 
 -- Shelf capacity per vendor per item (Lesson 14's numbers).
 VendorCapacity = {
@@ -43,7 +43,7 @@ VendorCapacity = {
         bushidoCarbine = 2, harborShotgun = 2,
         rounds556 = 200, shells12 = 100,
     },
-    tanaz0lamAmmo = {
+    tanazAmmo = {
         ammo = 1000, pistolAmmo = 500,
         rounds556 = 250, shells12 = 100,
     },
@@ -62,7 +62,7 @@ Demand = {
         bushidoCarbine = 0, harborShotgun = 0,
         rounds556 = 20, shells12 = 5,
     },
-    tanaz0lamAmmo = {
+    tanazAmmo = {
         ammo = 60, pistolAmmo = 35,
         rounds556 = 15, shells12 = 6,
     },
@@ -129,7 +129,7 @@ function runCity(hours)
         cityBuys()
         sinceRestock = sinceRestock + 1
         print("Hour " .. hour ..
-              " | Tanaz0lam pistol: " .. VendorStock.tanaz0lamAmmo.pistolAmmo ..
+              " | Tanaz pistol: " .. VendorStock.tanazAmmo.pistolAmmo ..
               " | Bushido 5.56: " .. VendorStock.bushidoSupply.rounds556 ..
               " | Glizzys fuel: " .. VendorStock.glizzysDepot.fuel)
         if sinceRestock >= RESTOCK_EVERY then
@@ -146,7 +146,7 @@ function showFinalShelves()
           VendorStock.glizzysDepot.fuel .. " fuel, " ..
           VendorStock.glizzysDepot.glizzyDog .. " dogs, " ..
           VendorStock.glizzysDepot.water .. " water")
-    print("Tanazolam-tummy Express: " ..
+    print("Tanaz-tummy Express: " ..
           VendorStock.tummyExpress.beans .. " beans, " ..
           VendorStock.tummyExpress.energyDrink .. " energy drinks")
     print("Bushido Supply: " ..
@@ -156,11 +156,11 @@ function showFinalShelves()
           VendorStock.bushidoSupply.harborShotgun .. " shotguns, " ..
           VendorStock.bushidoSupply.rounds556 .. " x 5.56, " ..
           VendorStock.bushidoSupply.shells12 .. " shells")
-    print("Tanaz0lam Ammo: " ..
-          VendorStock.tanaz0lamAmmo.ammo .. " AR, " ..
-          VendorStock.tanaz0lamAmmo.pistolAmmo .. " pistol, " ..
-          VendorStock.tanaz0lamAmmo.rounds556 .. " x 5.56, " ..
-          VendorStock.tanaz0lamAmmo.shells12 .. " shells")
+    print("Tanaz Ammo: " ..
+          VendorStock.tanazAmmo.ammo .. " AR, " ..
+          VendorStock.tanazAmmo.pistolAmmo .. " pistol, " ..
+          VendorStock.tanazAmmo.rounds556 .. " x 5.56, " ..
+          VendorStock.tanazAmmo.shells12 .. " shells")
 end
 
 -- ============================================================
@@ -172,7 +172,7 @@ end
 --
 -- Your turn:
 --   * Set RESTOCK_EVERY to 2. Which hours snap back now?
---   * Set Tanaz0lam pistolAmmo demand to 0 for an hour —
+--   * Set Tanaz pistolAmmo demand to 0 for an hour —
 --     what happens to its saw-tooth?
 --   * Swap a rate for math.random(0, 50) and run it twice.
 --     Why can't you predict the final shelves any more?
