@@ -55,6 +55,16 @@
 -- trusting it — and the client applies the fuel only
 -- after the server approves the sale.
 --
+-- LESSON 28 ADDITION: JOBS. The counters' mirror image:
+-- instead of spending gold at a spot, you EARN it there.
+-- /work starts a shift at a job spot (Lesson 3's three
+-- jobs and pays, now at real map spots from config.lua,
+-- plus three of Tanner's own added before the merge:
+-- police 25, sign spinner 10, tech mogul 50 per hour);
+-- the server stamps the start on its own clock, and
+-- /collect pays through the Lesson 25 bridge once the
+-- shift has actually run. Details at JOBS below.
+--
 -- LESSON 20 ADDITION: a real MENU (NUI). The server
 -- builds each shop's menu (items, prices, live stock,
 -- the asker's gold) and the client's web page just draws
@@ -711,6 +721,72 @@ function buyFuel(playerId, vendorKey, amount, playerCoords, tankLevel)
     end
 end
 
+-- ============================================================
+-- JOBS (Lesson 28) — earn instead of spend. Lesson 3's
+-- workShift paid the instant you asked; here a shift
+-- takes real time. /work stamps the start on the
+-- SERVER's clock (GetGameTimer — a modded client can't
+-- rewind it), and /collect checks that stamp before
+-- paying through the bridge: Fw.AddMoney, its first
+-- real use (every flow before this one only removed).
+-- One shift at a time, and shifts are NOT saved —
+-- drop mid-shift and it's gone, like Lesson 26's
+-- offline hunger: honest work only counts live.
+-- The range rule is Lesson 17's, reused: you start
+-- AND collect at the job spot — no clocking in at LS
+-- Customs and collecting from across the map.
+-- ============================================================
+SHIFT_MS = 60000  -- one minute a shift — Lesson 15's city
+                  -- hour, short so you can watch it work
+
+PlayerShifts = {}  -- license key -> { job = key, started = ms }
+
+function startShift(playerId, jobKey, playerCoords)
+    local job = Config.Jobs[jobKey]
+    if job == nil then
+        return false, "No such job: " .. tostring(jobKey) ..
+               " (mechanic, taxi, delivery, policeOfficer," ..
+               " signSpinner, techMogul)"
+    end
+    local key = playerKey(playerId)
+    if PlayerShifts[key] ~= nil then
+        return false, "Already on a shift (" ..
+               Config.Jobs[PlayerShifts[key].job].label ..
+               ") - /collect at that job first."
+    elseif #(playerCoords - job.coords) > Config.BuyRange then
+        return false, "You need to be at " .. job.place ..
+               " to work a " .. job.label .. " shift."
+    end
+    PlayerShifts[key] = { job = jobKey, started = GetGameTimer() }
+    return true, "Shift started: " .. job.label .. " at " ..
+           job.place .. ". Work " .. (SHIFT_MS // 1000) ..
+           "s, then /collect here for " .. job.pay .. " gold."
+end
+
+function collectShift(playerId, playerCoords)
+    local key = playerKey(playerId)
+    local shift = PlayerShifts[key]
+    if shift == nil then
+        return false, "You're not on a shift - /work <job> first."
+    end
+    local job = Config.Jobs[shift.job]
+    if #(playerCoords - job.coords) > Config.BuyRange then
+        return false, "Collect at " .. job.place ..
+               " - that's where the shift is."
+    end
+    local worked = GetGameTimer() - shift.started
+    if worked < SHIFT_MS then
+        local left = (SHIFT_MS - worked + 999) // 1000
+        return false, "Shift not done: " .. left ..
+               "s left on the " .. job.label .. " shift."
+    end
+    PlayerShifts[key] = nil
+    Fw.AddMoney(playerId, job.pay)  -- money moved...
+    saveData()                      -- ...so save it now
+    return true, "Shift done: " .. job.label .. " paid " ..
+           job.pay .. " gold. Gold: " .. playerGold(playerId)
+end
+
 -- A wallet readout as one line, built here so the client
 -- stays dumb: it just prints what the server sends.
 function walletSummary(playerId)
@@ -917,6 +993,22 @@ AddEventHandler('shops:buyFuel', function(amount, tankLevel)
     end
 end)
 
+RegisterNetEvent('shops:work')
+AddEventHandler('shops:work', function(jobKey)
+    local playerId = source
+    local coords = GetEntityCoords(GetPlayerPed(playerId))
+    local ok, message = startShift(playerId, jobKey, coords)
+    TriggerClientEvent('shops:result', playerId, message)
+end)
+
+RegisterNetEvent('shops:collect')
+AddEventHandler('shops:collect', function()
+    local playerId = source
+    local coords = GetEntityCoords(GetPlayerPed(playerId))
+    local ok, message = collectShift(playerId, coords)
+    TriggerClientEvent('shops:result', playerId, message)
+end)
+
 RegisterNetEvent('shops:useFood')
 AddEventHandler('shops:useFood', function(foodKey)
     local playerId = source
@@ -964,6 +1056,7 @@ end, false)
 AddEventHandler('playerDropped', function(reason)
     local key = playerKey(source)
     PlayerSources[key] = nil  -- seat's empty: stop ticking them
+    PlayerShifts[key] = nil   -- Lesson 28: a dropped shift is gone
     saveData()
 end)
 
